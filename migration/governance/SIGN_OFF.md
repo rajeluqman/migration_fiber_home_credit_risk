@@ -40,6 +40,24 @@ sign-off. ADR-008 + ADR-009 stay **Proposed** until all boxes below are checked.
 
 ---
 
+## Gate 1.5 — Local-First Dev Workflow + Trial-Capacity Sequencing (ADR-010)
+Governs *how* logic gets developed and *which* capacity is provisioned first, so the $200
+credit is spent on validation, not iteration. Adds boundary rule **FB8** (fenced local-dev
+PySpark under `tests/local/`, cite-ADR-010) and a local pre-parity Tier 0 to ADR-007.
+ADR-010 stays **Proposed** until all boxes below are checked.
+
+| Role | Sign-off required | Status | Date | Notes |
+|---|---|---|---|---|
+| @scope-guardian | FB8 carve-out scope-compliant (fenced to `tests/local/`, cite-ADR-010, FB1–FB4 still hold, dev-only never deployed to Fabric) | ☑ Signed | 2026-07-01 | APPROVE-CONDITIONAL; 3 fixes applied (pipeline-isolation now enforced, code/doc nesting agree, string-match limit disclosed). D3/D4 Fabric-native — no veto. |
+| @finops-agent | Trial-first sequencing (ADR-010 D4) protects the $200 credit; local-first dev keeps iteration CU at zero | ☑ Signed | 2026-07-01 | APPROVE-CONDITIONAL; economics of D1/D2/D4 signed. Trial-capacity operational conditions (day-60/61, ADR-009 coverage, CU-budget) carried forward as pre-Gate-1.5 hygiene. |
+| Owner | GO / no-go on local-first + trial-first workflow | ☑ Signed | 2026-07-01 | GO — local-first dev + trial-first sequencing authorised. |
+
+**Gate 1.5 outcome:** ☑ SIGNED 2026-07-01 — ADR-010 = Accepted. FB8 carve-out + local pre-parity
+Tier 0 authorised. Finops trial-capacity operational conditions carried forward as pre-Gate-2
+hygiene (not blockers).
+
+---
+
 ## Gate 1 — New Repo + Contract Setup (required before any Fabric code is written)
 After Gate 0 is signed:
 - New dedicated repo created (`home-credit-fabric` or equivalent).

@@ -1,7 +1,9 @@
 # ADR-005: Full Migration to Microsoft Fabric Ecosystem
 
 **Status:** Accepted — Gate 0 signed 2026-07-01. Design-phase; real Fabric provisioning
-awaits Gate 1 (see `migration/governance/SIGN_OFF.md`).
+awaits Gate 1 (see `migration/governance/SIGN_OFF.md`). Provisioning sequencing (trial-capacity
+first, paid $200 credit reserved for scale validation) + local-first logic dev are governed by
+**ADR-010** (Proposed, Gate 1.5).
 **Date:** 2026-06-30
 **Owner:** Raja Ahmad Luqman (single-dev). Drafted in `fabric-migration/` per the
 2026-06-30 design session — built outside the live AWS/Snowflake governance globs so this

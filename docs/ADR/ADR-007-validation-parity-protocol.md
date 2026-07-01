@@ -20,6 +20,15 @@ This ADR answers three questions:
 
 ## Parity Protocol
 
+### Tier 0 — Local pre-parity on sampled data (added by ADR-010, before any Fabric CU)
+Silver transform logic is proven correct on a **sample** (50k–100k rows) using the local
+PySpark 3.5 + `delta-spark` harness under `tests/local/` (FB8, ADR-010) **before** any Fabric
+capacity is provisioned or CU spent. This is a *logic-correctness* gate (PII-mask order DI-002,
+XNA→NULL, dedup keys, MERGE upsert branches, the idempotency re-run below), **not** a scale or
+row-count parity gate — full-scale row-count parity against the benchmarks is still Tiers 1–5 on
+the real Fabric run. Tier 0 exists so that trial/paid CU is spent on validation, not on
+debugging logic. It is a precondition for, not a substitute for, Tiers 1–5.
+
 ### Tier 1 — Row-count match (mandatory, all tables)
 For every Silver and Gold table, post-Fabric run:
 ```
