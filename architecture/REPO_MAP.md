@@ -8,7 +8,7 @@
 > **This is a pointer, not a cache.** It tells you which file to open — then READ THAT
 > FILE FRESH before you edit or assert about it (ANTI-SHORTCUT PROTOCOL, CLAUDE.md).
 
-**73 files mapped.**
+**78 files mapped.**
 
 ## Architecture Decision Records
 
@@ -83,14 +83,19 @@
 | File | Purpose | Uses | Used by |
 |------|---------|------|---------|
 | `notebooks/nb_silver_application.py` | Fabric Spark Notebook stub — Silver transform for application_train. | — | — |
+| `notebooks/nb_silver_balance_tables.py` | Fabric Spark Notebook stub — Silver transform for the balance tables | — | — |
 | `notebooks/nb_silver_bureau.py` | Fabric Spark Notebook stub — Silver transform for bureau.csv. | — | — |
 | `notebooks/nb_silver_installments.py` | Fabric Spark Notebook stub — Silver transform for installments_payments.csv. | — | — |
+| `notebooks/nb_silver_previous_application.py` | Fabric Spark Notebook stub — Silver transform for previous_application.csv. | — | — |
 
 ## Data Factory pipelines
 
 | File | Purpose | Uses | Used by |
 |------|---------|------|---------|
 | `pipelines/README.md` | Data Factory Pipelines (stubs) | — | — |
+| `pipelines/bronze_ingestion.json` | — | — | — |
+| `pipelines/gold_dbt.json` | — | — | — |
+| `pipelines/silver_transforms.json` | — | — | — |
 
 ## Migration artefacts (benchmarks, validation, staging)
 
