@@ -1,0 +1,14 @@
+{
+  "_stub": true,
+  "name": "silver_transforms",
+  "description": "Data Factory pipeline stub — 5 Fabric Spark Silver notebooks + inline assertion gate. Real pipeline JSON is exported from the Fabric UI once a workspace is provisioned. See docs/PIPELINE_SPEC.md section 5.2 for the notebook dependency chain.",
+  "chain_position": "2 of 3",
+  "activities": [
+    "notebook: nb_silver_application",
+    "notebook: nb_silver_bureau (depends on nb_silver_application)",
+    "notebook: nb_silver_previous_application (depends on nb_silver_application)",
+    "notebook: nb_silver_installments (depends on nb_silver_application)",
+    "notebook: nb_silver_balance_tables (depends on nb_silver_application)",
+    "gate: silver inline-assertion gate (fan-in) -> triggers gold_dbt"
+  ]
+}

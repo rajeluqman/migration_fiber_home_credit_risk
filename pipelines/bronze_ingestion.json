@@ -1,0 +1,10 @@
+{
+  "_stub": true,
+  "name": "bronze_ingestion",
+  "description": "Data Factory pipeline stub — Kaggle download Fabric Notebook -> OneLake Bronze. Real pipeline JSON is exported from the Fabric UI once a workspace is provisioned (migration/governance/SIGN_OFF.md Gate 1). See docs/PIPELINE_SPEC.md section 5.",
+  "chain_position": "1 of 3",
+  "triggers": "gold_dbt runs after silver_transforms runs after this",
+  "activities": [
+    "notebook: nb_bronze_ingest (Kaggle API download -> OneLake Bronze Delta)"
+  ]
+}

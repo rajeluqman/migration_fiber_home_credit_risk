@@ -1,0 +1,10 @@
+{
+  "_stub": true,
+  "name": "gold_dbt",
+  "description": "Data Factory pipeline stub — dbt-fabric build against Fabric Warehouse (T-SQL) + Teams pass/fail alert. Real pipeline JSON is exported from the Fabric UI once a workspace is provisioned. See docs/PIPELINE_SPEC.md section 5.",
+  "chain_position": "3 of 3",
+  "activities": [
+    "dbt: dbt build (staging -> intermediate -> mart + snap_applicant snapshot)",
+    "alert: Teams connector on pass/fail (replaces Slack)"
+  ]
+}

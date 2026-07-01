@@ -1,0 +1,31 @@
+{
+  "mcpServers": {
+    "fabric": {
+      "command": "uvx",
+      "args": ["mcp-server-fabric"],
+      "env": {
+        "FABRIC_WORKSPACE_ID": "${FABRIC_WORKSPACE_ID}",
+        "FABRIC_LAKEHOUSE_ID": "${FABRIC_LAKEHOUSE_ID}",
+        "AZURE_TENANT_ID": "${AZURE_TENANT_ID}",
+        "AZURE_CLIENT_ID": "${AZURE_CLIENT_ID}",
+        "AZURE_CLIENT_SECRET": "${AZURE_CLIENT_SECRET}"
+      }
+    },
+    "azure": {
+      "command": "uvx",
+      "args": ["mcp-server-azure"],
+      "env": {
+        "AZURE_TENANT_ID": "${AZURE_TENANT_ID}",
+        "AZURE_CLIENT_ID": "${AZURE_CLIENT_ID}",
+        "AZURE_CLIENT_SECRET": "${AZURE_CLIENT_SECRET}"
+      }
+    },
+    "dbt": {
+      "command": "dbt-mcp",
+      "args": [],
+      "env": {
+        "DBT_PROFILES_DIR": "${DBT_PROFILES_DIR}"
+      }
+    }
+  }
+}
