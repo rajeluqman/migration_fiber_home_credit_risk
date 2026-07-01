@@ -21,6 +21,25 @@ code authorised to merge to main. Real Fabric provisioning still requires Gate 1
 
 ---
 
+## Gate 0.5 — Option B Design Amendment (ADR-008 + ADR-009)
+Post-Gate-0 amendment: the Owner ruled "Fabric-only" **absolute**, exercising ADR-006 §4's
+pre-authorised "Option B" (retire dbt → Fabric Warehouse T-SQL) and adding capacity-lifecycle
+automation. This materially amends the Gate-0 ADR-005/006 decisions, so it carries its own
+sign-off. ADR-008 + ADR-009 stay **Proposed** until all boxes below are checked. See
+`MIGRATION_JOURNEY.md` J-002…J-008 for the full trail.
+
+| Role | Sign-off required | Status | Date | Notes |
+|---|---|---|---|---|
+| @data-architect | ADR-008 preserves grain/SCD2/identity; C1–C8 present in drafted text | ☑ Signed | 2026-07-01 | APPROVE of drafted text; C1–C8 verified line-by-line. Signature contingent on the C3 NULL-safe + C4 invariant + C5 atomicity side-by-side dbt proof landing in the build PR. |
+| @scope-guardian | ADR-008 (dbt retire, FB5) + ADR-009 (FB7 carve-out) are scope-compliant | ☑ Signed | 2026-07-01 | APPROVE both. FB7 widened to "capacity-lifecycle control-plane actions only" re-confirmed; hard-cap 3 actions / 1 resource; no banned platform reintroduced. |
+| @finops-agent | ADR-009 satisfies the Gate-0 pause condition; cost acceptable | ☑ Signed | 2026-07-01 | APPROVE. Pause condition satisfied by automation. Billing-increment + early CU-logging carried forward as pre-build verification items. Economic case watchdog+kill-switch-dependent, accepted. |
+| Owner | Final go/no-go on the Option B pivot | ☑ Signed | 2026-07-01 | GO — Option B pivot authorised (retire dbt → Warehouse T-SQL; capacity lifecycle automation). |
+
+**Gate 0.5 outcome:** ☑ SIGNED 2026-07-01 — ADR-008/009 = Accepted. Build-phase execution
+(same-PR checklist in ADR-008) authorised. Real Fabric provisioning still requires Gate 1.
+
+---
+
 ## Gate 1 — New Repo + Contract Setup (required before any Fabric code is written)
 After Gate 0 is signed:
 - New dedicated repo created (`home-credit-fabric` or equivalent).

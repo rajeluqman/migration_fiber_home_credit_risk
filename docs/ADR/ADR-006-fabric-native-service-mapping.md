@@ -61,6 +61,11 @@ that runs the Kaggle download script.**
   3 chained Airflow DAGs.
 
 ### 4. Gold/mart transform (replaces dbt Core + Snowflake)
+> ⚠️ **PROPOSED SUPERSESSION (2026-07-01):** the Owner ruled "Fabric-only" absolute, exercising
+> the "Option B" fallback below. This §4 decision (dbt retained) is superseded by
+> `docs/ADR/ADR-008-retire-dbt-warehouse-tsql.md` (**Accepted 2026-07-01**, Gate 0.5). Original text
+> left intact per ADR discipline.
+
 **Decision: dbt Core retained with `dbt-fabric` adapter (type: fabric) — NAMED EXCEPTION.**
 
 - dbt Core is NOT a Fabric-native service. It is third-party OSS. This is the one

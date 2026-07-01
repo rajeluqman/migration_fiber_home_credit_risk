@@ -20,6 +20,23 @@ plan, sign-off gates, copied verbatim from the parent repo's `fabric-migration/`
 
 `docs/ADR/ADR-005-fabric-full-migration-decision.md` status is now **Accepted** (was Proposed).
 
+**PIVOT + Gate 0.5 SIGNED (2026-07-01):** Owner ruled "Fabric-only" **absolute** → exercised
+ADR-006 §4 "Option B". Two new ADRs are now **Accepted** (Gate 0.5, 3 personas + Owner):
+- `docs/ADR/ADR-008-retire-dbt-warehouse-tsql.md` — retire dbt entirely; Gold/mart = Fabric
+  Warehouse T-SQL stored procedures; SCD2 = A1 T-SQL MERGE proc. Carries binding conditions
+  C1–C8 (NULL-safe change detection, both-direction one-current THROW gate, atomic fallback,
+  deterministic HASHBYTES SK, Gold does no PII hashing).
+- `docs/ADR/ADR-009-capacity-lifecycle-automation.md` — nightly batch, Azure-native resume
+  (chicken-and-egg fix), in-Fabric suspend/watchdog + daily kill-switch, FB7 carve-out.
+
+**Next action is now the BUILD PHASE** (ADR-008 "Same-PR execution checklist"), NOT Gate 1
+directly: create `warehouse/` T-SQL tree, retire `dbt_fabric/`, rewrite boundary contract FB5
+(dbt-absence) + add FB7, amend DATA_MODEL/CLAUDE/ARCHITECTURE in the same PR, fix the pre-existing
+doc-reference drift (2 violations at ADR-005:92) + the mis-stated contract-status line below,
+regenerate REPO_MAP. This is Sonnet-appropriate spec-driven work against the frozen ADRs. Gate 1
+(real Fabric provisioning) still follows and is still unsigned. Full trail: `MIGRATION_JOURNEY.md`
+J-001…J-009.
+
 **What has NOT happened:** no Fabric workspace provisioned, no OneLake Lakehouse created, no
 Fabric Spark notebook has run against real data, no dbt-fabric build has executed against a
 real Fabric Warehouse. `.env.example` lists the vars a real workspace will need
