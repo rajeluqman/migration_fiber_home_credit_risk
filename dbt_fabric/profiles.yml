@@ -1,0 +1,15 @@
+home_credit_fabric:
+  target: dev
+  outputs:
+    dev:
+      type: fabric
+      driver: 'ODBC Driver 18 for SQL Server'
+      server: "{{ env_var('FABRIC_WAREHOUSE_ENDPOINT', 'your-workspace.datawarehouse.fabric.microsoft.com') }}"
+      port: 1433
+      database: "{{ env_var('FABRIC_WAREHOUSE_NAME', 'home_credit_gold') }}"
+      schema: dbo
+      authentication: ServicePrincipal
+      tenant_id: "{{ env_var('AZURE_TENANT_ID', '') }}"
+      client_id: "{{ env_var('AZURE_CLIENT_ID', '') }}"
+      client_secret: "{{ env_var('AZURE_CLIENT_SECRET', '') }}"
+      threads: 4

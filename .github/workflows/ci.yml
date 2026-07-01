@@ -1,0 +1,58 @@
+name: CI
+
+# static-gates: $0, no cloud, no secrets, runs on every PR + push. Proves: scripts compile,
+# lint clean, unit tests pass, the 3 governance contracts hold, repo-map index is fresh.
+# Does NOT run a real Fabric Spark job or a real dbt-fabric build — those need Fabric credentials
+# not available in CI (no Fabric service principal OIDC wired here yet).
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  static-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff pytest pandas pyarrow python-dotenv pyyaml
+
+      - name: Lint (ruff)
+        run: ruff check notebooks/ tests/ scripts/ .claude/hooks/ migration/governance/
+
+      - name: Compile Python
+        run: |
+          shopt -s nullglob
+          for f in notebooks/*.py tests/*.py tests/unit/*.py scripts/*.py .claude/hooks/*.py migration/governance/*.py migration/validation/*.py; do
+            python -m py_compile "$f"
+          done
+
+      - name: Unit tests
+        run: pytest tests/unit/ -v
+
+      - name: Identity contract (SK_ID_CURR + SCD2 — ADR-001)
+        run: python tests/identity_contract.py
+
+      - name: Boundary contract (Fabric-only stack — FB1-FB6)
+        run: python tests/boundary_contract.py
+
+      - name: Doc-reference contract (no model/path drift)
+        run: python tests/doc_reference_contract.py
+
+      - name: Repo-map freshness (navigation index matches ground truth)
+        run: python scripts/gen_repo_map.py --check
+
+      - name: Guard — no secrets / .env committed
+        run: |
+          if git ls-files | grep -E '(^|/)\.env(\.[a-z]+)?$' | grep -v '\.env\.example$'; then
+            echo "::error::.env must not be committed"; exit 1
+          fi
+          echo "no .env tracked - ok"

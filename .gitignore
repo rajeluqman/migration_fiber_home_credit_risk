@@ -1,0 +1,38 @@
+# CLAUDE.md, .claude/, PROJECT_STATUS.md are INTENTIONALLY committed (same pattern as parent
+# repo home-credit-pipeline) — self-contained portfolio repo by design.
+
+# Credentials
+.env
+.env.dev
+.env.staging
+.env.prod
+*.env
+credentials/
+
+# Data
+*.parquet
+*.csv
+*.xlsx
+data/
+raw/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# dbt
+.dbt/
+dbt_packages/
+target/
+dbt_fabric/target/
+
+# Logs
+logs/
+*.log
+
+# IDE
+.vscode/settings.json
+.idea/
+.DS_Store

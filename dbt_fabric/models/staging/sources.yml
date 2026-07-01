@@ -1,0 +1,13 @@
+version: 2
+
+sources:
+  - name: silver
+    schema: silver
+    tables:
+      - name: silver_application
+      - name: silver_bureau
+      - name: silver_bureau_balance
+      - name: silver_installments
+      - name: silver_previous_application
+      - name: silver_pos_cash
+      - name: silver_credit_card
