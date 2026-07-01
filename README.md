@@ -80,8 +80,8 @@ What **is** true today:
 | `tests/doc_reference_contract.py` | Enforces no doc drift |
 | `.claude/hooks/governance_guard.py` | Pre/post-edit governance nudge + contract runner |
 | `.claude/agents/` | 11 specialized agents with veto rights |
-| `docs/ADR/` | ADR-001..004 (Fabric versions) |
-| `migration/` | Pre-migration design record: ADR-005/006/007, benchmarks, parity plan, sign-off gates |
+| `docs/ADR/` | ADR-001..007 (Fabric versions; 005-007 mirrored from `migration/ADR/` for a unified sequence) |
+| `migration/` | Pre-migration design record (canonical ADR-005/006/007), benchmarks, parity plan, sign-off gates |
 
 ---
 

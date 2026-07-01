@@ -8,7 +8,7 @@
 > **This is a pointer, not a cache.** It tells you which file to open — then READ THAT
 > FILE FRESH before you edit or assert about it (ANTI-SHORTCUT PROTOCOL, CLAUDE.md).
 
-**70 files mapped.**
+**73 files mapped.**
 
 ## Architecture Decision Records
 
@@ -19,6 +19,9 @@
 | `docs/ADR/ADR-003-kimball-over-obt-sizing.md` | ADR-003: Kimball-over-OBT Sizing Math (Fabric Spark node-pool memory risk) | — | — |
 | `docs/ADR/ADR-004-onelake-merge-idempotency.md` | ADR-004: OneLake Delta MERGE — Silver Idempotency (replaces Snowpipe Silver→Gold Bridge) | — | — |
 | `docs/ADR/ADR-004-snowpipe-silver-gold-bridge.md` | ADR-004: Snowpipe Silver→Gold Bridge — Parent Repo Reference (SUPERSEDED) | — | — |
+| `docs/ADR/ADR-005-fabric-full-migration-decision.md` | ADR-005: Full Migration to Microsoft Fabric Ecosystem | — | — |
+| `docs/ADR/ADR-006-fabric-native-service-mapping.md` | ADR-006: Fabric-Native Service Mapping (All Layers) | — | — |
+| `docs/ADR/ADR-007-validation-parity-protocol.md` | ADR-007: Validation, Parity, and Idempotency Protocol | — | — |
 
 ## Top-level docs
 
