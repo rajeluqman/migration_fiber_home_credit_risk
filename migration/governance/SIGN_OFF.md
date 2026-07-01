@@ -11,12 +11,13 @@ Gate 0 is fully signed. ADR-005 stays Proposed until all four boxes below are ch
 
 | Role | Sign-off required | Status | Date | Notes |
 |---|---|---|---|---|
-| @scope-guardian | ADR-005 scope does not creep beyond what's listed; `tests/boundary_contract.py` in parent repo stays green throughout dual-run | ☐ Pending | — | — |
-| @data-architect | Kimball grain/SCD2 design genuinely survives the re-platform unchanged (verify ADR-006 Gold-layer mapping) | ☐ Pending | — | — |
-| @finops-agent | Fabric CU cost estimate vs. `benchmarks/COST_BASELINE.md` current spend is acceptable | ☐ Pending | — | — |
-| Owner | Final go/no-go, single-dev portfolio project decision | ☐ Pending | — | — |
+| @scope-guardian | ADR-005 scope does not creep beyond what's listed; `tests/boundary_contract.py` in parent repo stays green throughout dual-run | ☑ Signed | 2026-07-01 | Contract passes clean, no banned platforms reintroduced, Spark confined to `notebooks/`. APPROVE. |
+| @data-architect | Kimball grain/SCD2 design genuinely survives the re-platform unchanged (verify ADR-006 Gold-layer mapping) | ☑ Signed | 2026-07-01 | Grain/SCD2 verified 1:1 against DATA_MODEL.md. APPROVE (conditional — dim_loan_type/dim_credit_status not yet built, tracked as follow-up). |
+| @finops-agent | Fabric CU cost estimate vs. `benchmarks/COST_BASELINE.md` current spend is acceptable | ☑ Signed | 2026-07-01 | F2 (~$262/mo) vs ~$0.19 lifetime baseline is a real cost increase, not a saving. Owner has a $200 USD Fabric trial credit, covering ~76% of month one; accepted with pause/deallocate-when-idle expectation. See ADR-005 sign-off for full reasoning. |
+| Owner | Final go/no-go, single-dev portfolio project decision | ☑ Signed | 2026-07-01 | GO — accepts finops trade-off in exchange for Fabric-native consolidation/portfolio narrative. |
 
-**Gate 0 outcome:** ☐ OPEN — ADR-005 status = Proposed, no provisioning authorised.
+**Gate 0 outcome:** ☑ SIGNED 2026-07-01 — ADR-005 status = Accepted. Framework/governance
+code authorised to merge to main. Real Fabric provisioning still requires Gate 1 below.
 
 ---
 

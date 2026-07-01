@@ -1,6 +1,7 @@
 # ADR-005: Full Migration to Microsoft Fabric Ecosystem
 
-**Status:** Proposed — design-phase only, NOT signed off, NOT executed.
+**Status:** Accepted — Gate 0 signed 2026-07-01. Design-phase; real Fabric provisioning
+awaits Gate 1 (see `migration/governance/SIGN_OFF.md`).
 **Date:** 2026-06-30
 **Owner:** Raja Ahmad Luqman (single-dev). Drafted in `fabric-migration/` per the
 2026-06-30 design session — built outside the live AWS/Snowflake governance globs so this
@@ -77,22 +78,36 @@ a presentation/positioning question, not an engineering one.
   is a third-party service outside the Fabric/M365 ecosystem; Teams (native M365, same tenant as
   Fabric) replaces it. See ADR-006.
 
-## Sign-off (REQUIRED before any real Fabric provisioning — none granted yet)
+## Sign-off (REQUIRED before any real Fabric provisioning)
 Per parent `CLAUDE.md` governance: @data-architect holds veto on grain/model changes,
 @scope-guardian holds veto on stack/scope creep. This ADR is a stack swap by definition, so
 **both vetoes are in scope, not optional**:
-- [ ] **@scope-guardian** — confirm this ADR's scope (Section "Scope") does not silently expand
-  beyond what's listed; confirm the existing `tests/boundary_contract.py` continues to pass
-  unmodified for as long as the AWS/Snowflake pipeline keeps running in parallel
-  (`staging/DUAL_RUN_PLAN.md`).
-- [ ] **@data-architect** — confirm the Kimball grain/SCD2 design genuinely survives the
-  re-platform unchanged (re-verify against `ADR-006`'s Gold-layer mapping, not assumed from this
-  ADR's claim alone).
-- [ ] **@finops-agent** — cost comparison: Fabric capacity-unit pricing vs. current AWS
-  free-tier + Snowflake credit spend (`benchmarks/COST_BASELINE.md` is the baseline to compare
-  against — not done in this pass, flagged as a pre-sign-off requirement, not a nice-to-have).
-- [ ] **Owner** — final go/no-go, since this is a single-dev portfolio project and the owner is
-  also the implementer.
+- [x] **@scope-guardian** — confirmed 2026-07-01: `tests/boundary_contract.py` passes clean
+  (no AWS SDK, no Snowflake connector, no Airflow, no Slack SDK, dbt adapter=fabric), no
+  reintroduced banned platforms, Spark confined to `notebooks/`, no scope creep beyond what's
+  listed in Section "Scope". APPROVE. Full review: Gate 0 sign-off review, 2026-07-01.
+- [x] **@data-architect** — confirmed 2026-07-01: all 4 implemented mart models preserve
+  locked grains 1:1 against `docs/DATA_MODEL.md`; `snap_applicant.sql` correctly uses
+  `strategy: check` SCD2 on `applicant_id`; no mixed-grain dimensions. APPROVE (conditional —
+  `dim_loan_type`/`dim_credit_status` not yet built out, tracked as a follow-up, not a grain
+  violation).
+- [x] **@finops-agent** — reviewed 2026-07-01, revised after owner disclosed a **$200 USD
+  Azure/Fabric trial credit** available for this project. Baseline real spend to date is
+  ≈$0.186 total (AWS Glue + Snowflake, portfolio/free-tier scale, `benchmarks/COST_BASELINE.md`),
+  while a Fabric F2 capacity runs a flat ≈$262/month regardless of usage. Unmitigated, that's
+  roughly a 1,400x jump for month one alone — a **cost increase, not a cost saving**, unlike
+  most of this ADR's other consequences. With the $200 trial credit applied, month one is
+  reduced to ≈$62 out-of-pocket (≈24% of full price), and pausing/deallocating the capacity
+  between work sessions (rather than leaving it running 24/7) can stretch that credit across
+  more than one month of intermittent portfolio-project usage. Accepted on that basis, with the
+  expectation that: (1) the F-SKU capacity is explicitly paused/deallocated when not actively in
+  use, (2) `COST_LOG.md`/`benchmarks/COST_BASELINE.md` is updated with the real credit balance
+  and real Fabric CU draw once provisioning happens (Gate 1+), and (3) the owner is notified
+  before the $200 credit is exhausted so continued spend is a conscious choice, not a surprise.
+- [x] **Owner** — final go/no-go, 2026-07-01: **GO**. Single-dev portfolio project; owner
+  (Raja Ahmad Luqman) is also the implementer and accepts the finops cost trade-off above in
+  exchange for the Fabric-native breadth/consolidation narrative this migration demonstrates.
 
-**This ADR stays Proposed until all four boxes are checked.** No Fabric resource should be
-provisioned against this design while it remains Proposed.
+**Gate 0 signed 2026-07-01 — ADR-005 status: Accepted.** Framework/governance code may now
+merge to main. Real Fabric provisioning still requires Gate 1 (new repo + contract setup, see
+`migration/governance/SIGN_OFF.md`) before any resource is created.

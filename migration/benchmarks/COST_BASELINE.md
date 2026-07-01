@@ -42,6 +42,15 @@ monthly fee (~$262/month as of 2026) regardless of whether you run 1 job or 10,0
 for a portfolio project, Fabric's value is the breadth-of-ecosystem demonstration and
 Power BI Direct Lake, not cost savings over an already-nearly-free baseline.
 
+**Update 2026-07-01 — owner has a $200 USD Fabric/Azure trial credit** earmarked for this
+migration. Applied against the ~$262/month F2 flat rate, month one costs ≈$62 out of pocket
+(≈24% of sticker price); pausing/deallocating the capacity between active work sessions
+(rather than running it continuously) stretches the credit further across intermittent
+portfolio-project usage. This was the deciding factor in @finops-agent's Gate 0 sign-off
+(see `governance/SIGN_OFF.md` and `docs/ADR/ADR-005-fabric-full-migration-decision.md`).
+Real credit balance and actual Fabric CU draw should be logged in `COST_LOG.md` once a
+Fabric workspace is provisioned (Gate 1+) — this baseline update is only the Gate 0 estimate.
+
 ## Ongoing cost accruals (not yet shut down as of 2026-06-30)
 Source: `PROJECT_STATUS.md` ~1613-1619: "ADR-004 dev-Snowpipe teardown deferred again —
 owner wants to capture screenshots of live AWS/Snowflake infra first."
