@@ -1,25 +1,45 @@
 # Project Status — Home Credit Risk Pipeline (Fabric)
 
 ## ▶ RESUME HERE
-**Where we are (2026-06-30, `fabric-framework-init` branch):** Full governance-framework port
-from the parent repo `home-credit-pipeline` is complete — CLAUDE.md, 3 static contracts, 11
-agents, 8 docs, ADR-001..004 (Fabric versions), `scripts/gen_repo_map.py`,
+**Where we are (2026-07-01, `main`, PR #1 merged):** Full governance-framework port from the
+parent repo `home-credit-pipeline` is complete and merged to `main` — CLAUDE.md, 3 static
+contracts, 11 agents, 8 docs, ADR-001..004 (Fabric versions), `scripts/gen_repo_map.py`,
 `architecture/REPO_MAP.md`, root logs, `learning/`, `.github/workflows/ci.yml`, `dbt_fabric/`
 stubs, and `migration/` (the pre-migration design record: ADR-005/006/007, benchmarks, parity
 plan, sign-off gates, copied verbatim from the parent repo's `fabric-migration/` folder).
 
+**Gate 0 is SIGNED (2026-07-01)** — all 4 roles approved in `migration/governance/SIGN_OFF.md`:
+- @scope-guardian: APPROVE — boundary contract clean, no scope creep.
+- @data-architect: APPROVE (conditional) — Kimball grain/SCD2 verified; `dim_loan_type` and
+  `dim_credit_status` mart models still not built (tracked gap, not a violation).
+- @finops-agent: APPROVE after mitigation — Fabric F2 (~$262/mo) vs ~$0.19 lifetime baseline is
+  a real cost increase; **owner has a $200 USD Fabric/Azure trial credit** covering ~76% of
+  month one. Accepted with the expectation that F-SKU capacity is paused/deallocated between
+  work sessions, not left running continuously.
+- Owner: GO.
+
+`docs/ADR/ADR-005-fabric-full-migration-decision.md` status is now **Accepted** (was Proposed).
+
 **What has NOT happened:** no Fabric workspace provisioned, no OneLake Lakehouse created, no
 Fabric Spark notebook has run against real data, no dbt-fabric build has executed against a
-real Fabric Warehouse. `migration/governance/SIGN_OFF.md` Gate 0 is unsigned — this is the
-prerequisite for any real provisioning.
+real Fabric Warehouse. `.env.example` lists the vars a real workspace will need
+(`FABRIC_WORKSPACE_ID`, `FABRIC_LAKEHOUSE_ID`, `AZURE_TENANT_ID`/`AZURE_CLIENT_ID`/
+`AZURE_CLIENT_SECRET`, `ONELAKE_ENDPOINT`) — none are populated with real values yet.
 
-**Next action:** Owner (or @scope-guardian + @data-architect + @finops-agent) signs Gate 0 in
-`migration/governance/SIGN_OFF.md`. Only after that: create the real Fabric workspace (Gate 1),
-port the 5 Silver notebooks from the parent repo's `glue/glue_silver_*.py` (dialect review per
-ADR-004/ADR-006 §3), then the dbt-fabric Gold models (T-SQL dialect review per ADR-006 §4).
+**Next action — Gate 1 (New Repo + Contract Setup)**, per `migration/governance/SIGN_OFF.md`:
+this repo itself already satisfies "new dedicated repo created" and "`fabric-migration/`
+folder lifted in" (as `migration/`). Remaining Gate 1 conditions: wire
+`migration/governance/boundary_contract_fabric.py` into `.claude/hooks/` + CI (currently only
+`tests/boundary_contract.py` is wired), and confirm the parent repo's contracts are still green
+(no side-effects from this repo's work). Only after Gate 1 is signed: create the real Fabric
+workspace/capacity (mind the $200 credit — pause when idle), port the 5 Silver notebooks from
+the parent repo's `glue/glue_silver_*.py` (dialect review per ADR-004/ADR-006 §3), then the
+dbt-fabric Gold models (T-SQL dialect review per ADR-006 §4).
 
-**Do NOT:** provision any real Fabric resource before Gate 0 is signed. Do NOT assume a Fabric
-Spark node pool sized smaller than the parent repo's proven AWS Glue G.1X×2 headroom
+**Do NOT:** provision any real Fabric resource before Gate 1 is signed. Do NOT leave a real
+Fabric capacity running continuously — it burns the $200 trial credit at a flat monthly rate
+regardless of usage; pause/deallocate between sessions. Do NOT assume a Fabric Spark node pool
+sized smaller than the parent repo's proven AWS Glue G.1X×2 headroom
 (`migration/benchmarks/INFRA_BASELINE.md`) is safe without re-verifying against real Fabric
 Spark memory behavior.
 
