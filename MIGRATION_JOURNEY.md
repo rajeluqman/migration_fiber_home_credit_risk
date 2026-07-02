@@ -307,3 +307,33 @@ metadata-level separation" subsection + Alternatives entry), `docs/PIPELINE_SPEC
 (`ENV=dev` added). `doc_reference_contract.py` green (23 docs).
 **Status:** ADR-011 still Proposed, now with `env` scheme concrete. No further doc gaps found for
 this decision. Next unchanged: Silver notebook logic + `tests/local/` FB8 harness (ADR-010 D1/D2).
+
+## J-014 · 2026-07-02 · Fabric capacity checked; first real files landed in OneLake
+**Step (1) Capacity check (read-only, no mutation):** `fab api -X get capacities/<id>` on
+`Trial-20260702T085611Z-...` → `sku: FTL4`, **`state: Active`** — running, not paused. Fabric
+Trial SKUs do not support pause/resume the way paid F-SKU capacities do (the 60-day clock runs
+regardless); confirmed via the API rather than assumed. No cost exposure either way — Trial is
+free for the 60-day window. Owner elected to leave it running as-is rather than attempt a
+`/suspend` call (which the harness correctly blocked as an unauthorized mutation on shared cloud
+infra when first attempted without explicit go-ahead). Also noted a pre-existing, unrelated
+tenant capacity (`Premium Per User - Reserved`, PP3, Malaysia West) — not provisioned by this
+project, ignored.
+**Step (2) Landing populated for real, per ADR-011:** used `fab` CLI (`fab mkdir` / `fab cp`) to
+write directly into `home_credit_lakehouse`'s OneLake **Files** area — the first real artifact in
+the Landing zone, not just a design doc. Path: `Files/landing/dev/batch_20260702T203311Z/`
+(`env=dev` per J-013's scheme). Uploaded all 7 modeled source CSVs (application_train.csv,
+bureau.csv, bureau_balance.csv, previous_application.csv, installments_payments.csv,
+POS_CASH_balance.csv, credit_card_balance.csv — `HomeCredit_columns_description.csv`,
+`application_test.csv`, `sample_submission.csv` are Kaggle-competition scaffolding, not modeled
+sources, and were left out) plus a `manifest.json` recording `batch_id`, `env`, `ingestion_ts`,
+and a SHA-256 + byte-size per file — the checksum ADR-011 calls for. Verified via
+`fab ls Files/landing/dev/batch_20260702T203311Z` — all 8 objects (7 CSVs + manifest) listed back
+from the API, not assumed from the `cp` "Done" output alone.
+**Not yet done:** Bronze materialization *from* this Landing batch (parse CSV → typed Delta,
+attach `ingestion_ts`/`source_file`/`batch_id`/`env`, partition by `ingestion_date`) has not run —
+this entry only covers Landing, per Owner's explicit "sampai siap file di landing zone" scope for
+this session. No Fabric Spark notebook code was run this session (Silver/Bronze logic still
+pending, ADR-010 D1/D2).
+**Status:** Landing zone (ADR-011) has its first real batch. Capacity confirmed Active/free, left
+running. Next: Bronze notebook (materialize from this Landing batch) → Silver notebooks →
+`tests/local/` FB8 Tier-0 harness (ADR-010 D1/D2, ADR-007 Tier 0), in that order.

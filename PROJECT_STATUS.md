@@ -22,15 +22,32 @@ into Delta **Tables** (Kaggle hit once, at Landing only). Same Lakehouse / one s
 refines ADR-006 §2, no scope/grain impact. Docs updated: ARCHITECTURE, PIPELINE_SPEC, CLAUDE.md,
 ADR-006 §2 cross-ref; `doc_reference_contract.py` green.
 
-**Next action:** port the 5 Silver notebooks (`glue/glue_silver_*.py` in the parent repo) into
-`tests/local/` under FB8 — dialect review per ADR-004/ADR-006 §3, proven locally (PySpark +
-delta-spark) before touching the Trial Warehouse. Then run ADR-007 Tier 0 (local pre-parity
-sample) before spending any real CU. Gate 2's actual conditions (G1-G5, G8 in
-`migration/governance/SIGN_OFF.md`) stay ☐ Pending until that produces parity evidence — today's
-work provisioned the infra, it did not run any Silver logic against it.
+**Update (2026-07-02, J-013):** `env` scoping made concrete — `ENV=dev` in `.env`/`.env.example`,
+Landing path is `Files/landing/<env>/<batch_id>/<file>.csv`, Bronze keeps `env` as a Delta column
+(not a table/path split). Separate dev/staging/prod **Fabric workspaces** explicitly rejected for
+this single-dev project (would burn the $200 trial credit on unused capacity).
 
-**Do NOT:** leave the Fabric Trial capacity running between sessions — pause/deallocate it; the
-day-60/61 expiry behaviour is still (unverified), unchanged by today's provisioning.
+**Update (2026-07-02, J-014):** Fabric Trial capacity checked via API (read-only) — `state:
+Active`, SKU `FTL4`. Trial SKUs don't support pause/resume like paid F2 (60-day clock runs
+regardless); confirmed via API, not assumed. No cost exposure — Owner elected to leave it running.
+**First real Landing batch written**: used `fab mkdir`/`fab cp` to push all 7 modeled source CSVs
++ a `manifest.json` (batch_id/env/ingestion_ts/SHA-256 per file) into OneLake
+`Files/landing/dev/batch_20260702T203311Z/` — verified back via `fab ls` (8 objects). This is the
+first real (non-doc) artifact of ADR-011. Bronze materialization from this batch has **not** run
+yet — no Fabric Spark notebook code executed this session.
+
+**Next action:** materialize Bronze from `Files/landing/dev/batch_20260702T203311Z/` (parse CSV →
+typed Delta `bronze.{table}`, attach `ingestion_ts`/`source_file`/`batch_id`/`env`, partition by
+`ingestion_date`) — then port the 5 Silver notebooks (`glue/glue_silver_*.py` in the parent repo)
+into `notebooks/*.py` (real logic, per ADR-010 D1) + a `tests/local/` FB8 harness (ADR-010 D2) —
+dialect review per ADR-004/ADR-006 §3, proven locally (PySpark + delta-spark) before touching the
+Trial Warehouse. Then run ADR-007 Tier 0 (local pre-parity sample) before spending any real CU.
+Gate 2's actual conditions (G1-G5, G8 in `migration/governance/SIGN_OFF.md`) stay ☐ Pending until
+that produces parity evidence.
+
+**Do NOT:** assume the Fabric Trial capacity is paused between sessions — as of J-014 it is
+confirmed `Active` and, per Trial SKU limits, may not be pausable at all; the day-60/61 expiry
+behaviour is still (unverified).
 
 ---
 
