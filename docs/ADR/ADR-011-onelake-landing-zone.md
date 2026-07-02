@@ -30,20 +30,39 @@ principle, not a new storage system and not a new Fabric service.
 Introduce an **explicit Landing layer** between the Kaggle download and Bronze:
 
 ```
-Kaggle API → Fabric Notebook → Landing (raw CSV, as-is)      → Bronze (Delta, typed, +metadata) → Silver → Gold
-                                home_credit_lakehouse/Files/    home_credit_lakehouse/Tables/
-                                landing/<batch_id>/<file>.csv   bronze_<table>
+Kaggle API → Fabric Notebook → Landing (raw CSV, as-is)             → Bronze (Delta, typed, +metadata) → Silver → Gold
+                                home_credit_lakehouse/Files/           home_credit_lakehouse/Tables/
+                                landing/<env>/<batch_id>/<file>.csv    bronze_<table> (env column, not a path)
 ```
 
-- **Landing** stores each downloaded CSV **byte-for-byte as received**, under a batch-scoped path
-  (`Files/landing/<batch_id>/<file>.csv`) plus a recorded SHA-256 checksum and the original
-  filename. Landing is **append-only and immutable** — never edited, never masked, never typed.
+- **Landing** stores each downloaded CSV **byte-for-byte as received**, under an env- and
+  batch-scoped path (`Files/landing/<env>/<batch_id>/<file>.csv`) plus a recorded SHA-256
+  checksum and the original filename. Landing is **append-only and immutable** — never edited,
+  never masked, never typed.
 - **Bronze** is materialized **from Landing** (not from the Kaggle API): parse CSV → typed Delta
   table, attach `ingestion_ts`/`source_file`/`batch_id`/`env`, partition by `ingestion_date`.
   Bronze remains exactly as specified in `docs/PIPELINE_SPEC.md` — its **input source changes
   from "the Kaggle API response" to "the Landing file"**, nothing else.
 - The Kaggle API is hit **once per ingestion**, at the Landing step only. Bronze re-materialization
   never re-calls Kaggle.
+
+### `env` — single workspace, metadata-level separation (not separate workspaces)
+`env` (from `ENV` in `.env`, default `dev`) tags **where data came from in the dev lifecycle**,
+not a physically isolated Fabric workspace:
+- **Landing path segment:** `Files/landing/<env>/<batch_id>/<file>.csv` — `<env>` is currently
+  always `dev` (there is one workspace, `home-credit-risk-dev`, per `migration/governance/
+  SIGN_OFF.md` Gate 2).
+- **Bronze column:** `env` is a Delta column on every Bronze row (not a path/table split) —
+  `bronze.{table}` is one table regardless of env, filterable by `WHERE env = 'dev'`.
+- **Rejected: separate dev/staging/prod Fabric workspaces.** For this single-dev portfolio
+  project there is no second team, no promote-across-environments workflow, and no CI/CD gate
+  that would consume a staging tier — a second or third workspace would mean a second/third
+  Fabric capacity with no corresponding usage, working directly against the $200 trial-credit
+  constraint @finops-agent already flagged (ADR-010, Gate 0 sign-off). One workspace + an `env`
+  column is the honest single-dev equivalent: it demonstrates env-awareness in the design without
+  paying for isolation nobody would exercise. If a second workspace is ever justified (e.g. a
+  genuine staging/prod split for a hiring-manager demo), that is a new ADR, not a silent change
+  here.
 
 ## Why a separate Landing zone beats Bronze-as-landing
 1. **Raw immutability / forensic original.** Bronze-as-Delta imposes schema-on-write immediately

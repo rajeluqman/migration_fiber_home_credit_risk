@@ -53,7 +53,7 @@ re-platformed onto Microsoft Fabric.
 | Layer | Storage / Service | Compute / engine | Notes |
 |-------|--------------------|-------------------|-------|
 | Source | Kaggle Competition API (`home-credit-default-risk`) | Fabric Notebook (invoked by Data Factory) | 7 CSVs, 300k–27M rows each |
-| Landing (raw ingress) | OneLake Lakehouse **Files** (`Files/landing/`, raw/unmanaged) | Fabric Notebook | ADR-011 — byte-for-byte CSV + checksum, immutable; Kaggle hit once here; Bronze replays from Landing |
+| Landing (raw ingress) | OneLake Lakehouse **Files** (`Files/landing/{env}/{batch_id}/`, raw/unmanaged) | Fabric Notebook | ADR-011 — byte-for-byte CSV + checksum, immutable; Kaggle hit once here; Bronze replays from Landing; `{env}` = single-workspace tag (`dev`), not a separate dev/staging/prod workspace |
 | Bronze/Silver/Gold storage | OneLake Lakehouse **Tables** (Delta, native ACID/time-travel) | — | one storage layer (same Lakehouse as Landing), zero cross-cloud egress |
 | Silver transform | OneLake Delta | **Fabric Spark Notebook** (Runtime 1.3 = Spark 3.5), 5 notebooks in `notebooks/` | PII mask (DI-002), XNA→NULL, dedup, native Delta MERGE |
 | Gold/marts | Fabric Warehouse (T-SQL) | **Fabric Warehouse T-SQL stored procedures**, `warehouse/{staging,intermediate,mart,scd2,dq}` | Kimball star, SCD2 = T-SQL MERGE proc (ADR-008, supersedes ADR-006 §4) — dbt retired entirely |

@@ -288,3 +288,22 @@ green (23 docs). Owner elected **skip persona sign-off** for this refinement —
 **Status:** ADR-011 Proposed, docs consistent. Silver-logic work (ADR-010 D1/D2) now unblocked —
 real sample data present. Next unchanged: implement Silver transforms in `notebooks/*.py` + FB8
 harness in `tests/local/`, prove ADR-007 Tier 0 locally before any Trial CU.
+
+## J-013 · 2026-07-02 · `env` scoping for Landing/Bronze — single workspace, not dev/staging/prod
+**Step:** Owner asked whether Landing needs separate dev/staging/production folders (the classic
+env-tier pattern). Checked current design: `env` was already named as a Bronze metadata column in
+`docs/PIPELINE_SPEC.md` but its value/path convention was never defined.
+**Decision:** `env` is a **metadata tag, not a workspace split**. Added `ENV=dev` to `.env`/
+`.env.example`. Landing path becomes `Files/landing/<env>/<batch_id>/<file>.csv`; Bronze keeps
+`env` as a Delta column (one `bronze.{table}`, filterable by env), not a separate table/path.
+Explicitly **rejected** separate dev/staging/prod Fabric workspaces: this is a single-dev
+portfolio project, no second team, no promote-across-env workflow — a 2nd/3rd workspace would be
+a 2nd/3rd Fabric capacity paid for with the same $200 trial credit @finops-agent already flagged
+as tight (ADR-010, Gate 0). One workspace + an `env` column demonstrates env-awareness honestly
+without paying for isolation nobody exercises.
+**Docs touched:** `docs/ADR/ADR-011-onelake-landing-zone.md` (new "`env` — single workspace,
+metadata-level separation" subsection + Alternatives entry), `docs/PIPELINE_SPEC.md`,
+`docs/ARCHITECTURE.md`, `CLAUDE.md` (path strings updated to `{env}`), `.env` + `.env.example`
+(`ENV=dev` added). `doc_reference_contract.py` green (23 docs).
+**Status:** ADR-011 still Proposed, now with `env` scheme concrete. No further doc gaps found for
+this decision. Next unchanged: Silver notebook logic + `tests/local/` FB8 harness (ADR-010 D1/D2).

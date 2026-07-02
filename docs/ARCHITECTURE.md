@@ -7,7 +7,7 @@
 | Layer | Tool | Notes |
 |-------|------|-------|
 | Storage | OneLake (Fabric) | Landing + Bronze + Silver + Gold, one logical lake, native ACID/time-travel |
-| Landing | OneLake Lakehouse **Files** (`Files/landing/`, raw/unmanaged) | raw CSV byte-for-byte + checksum, immutable ingress — Kaggle hit once here (ADR-011) |
+| Landing | OneLake Lakehouse **Files** (`Files/landing/{env}/{batch_id}/`, raw/unmanaged) | raw CSV byte-for-byte + checksum, immutable ingress — Kaggle hit once here; `{env}` = single workspace `dev` tag, not a separate workspace (ADR-011) |
 | Bronze | OneLake Lakehouse **Tables** (Delta, native) | materialized *from Landing* (not Kaggle) via Fabric Notebook, orchestrated by Data Factory (ADR-011) |
 | Silver | Fabric Spark Notebook (Runtime 1.3 = Spark 3.5) | SHA-256 masking, transforms, native Delta MERGE |
 | Silver→Gold bridge | Native Delta MERGE (`MERGE INTO ... ON SK_ID_CURR`) | ADR-004 — no Snowpipe-style COPY-INTO-only restriction (that constraint is gone) |

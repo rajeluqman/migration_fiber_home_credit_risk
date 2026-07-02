@@ -3,17 +3,20 @@
 
 ## Landing Layer (raw ingress — ADR-011)
 Input  : 7 CSV files from Kaggle Competition API (via Fabric Notebook)
-Output : OneLake Lakehouse **Files** area, `Files/landing/{batch_id}/{file}.csv` (raw, unmanaged)
+Output : OneLake Lakehouse **Files** area, `Files/landing/{env}/{batch_id}/{file}.csv` (raw, unmanaged)
 Logic  : Store each CSV **byte-for-byte as received** + SHA-256 checksum + original filename.
          Append-only, immutable — never edited, masked, or typed. Kaggle API is hit **once per
-         ingestion, here only** (ADR-011). This is the OneLake Files area of the *same*
-         Lakehouse as Bronze — one storage surface, no new service (ADR-006 §2, ADR-011).
+         ingestion, here only** (ADR-011). `{env}` = `ENV` from `.env` (currently always `dev` —
+         one Fabric workspace, no separate dev/staging/prod workspaces, ADR-011). This is the
+         OneLake Files area of the *same* Lakehouse as Bronze — one storage surface, no new
+         service (ADR-006 §2, ADR-011).
 
 ## Bronze Layer
-Input  : `Files/landing/{batch_id}/{file}.csv` (the Landing file — NOT the Kaggle API; ADR-011)
+Input  : `Files/landing/{env}/{batch_id}/{file}.csv` (the Landing file — NOT the Kaggle API; ADR-011)
 Output : OneLake Bronze Lakehouse **Tables**, `bronze.{table}` (Delta, partitioned by ingestion_date)
 Logic  : Materialize from Landing — parse CSV → typed Delta + ingestion_ts, source_file, batch_id,
-         env. Bronze re-materialization replays from Landing, never re-calls Kaggle (ADR-011).
+         env (column, not a table/path split — one `bronze.{table}` for all env values).
+         Bronze re-materialization replays from Landing, never re-calls Kaggle (ADR-011).
 
 ## Silver Layer (Fabric Spark Notebook)
 Input  : `bronze.{table}`
