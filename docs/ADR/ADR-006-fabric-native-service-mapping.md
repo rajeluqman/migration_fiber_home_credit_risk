@@ -43,6 +43,11 @@ that runs the Kaggle download script.**
   Power BI Direct Lake) reads the same OneLake path — zero data copies between layers.
 - Bronze Lakehouse, Silver Lakehouse, and Gold Lakehouse/Warehouse are separate Fabric
   items in the same workspace, maintaining medallion separation without separate billing.
+- **Refined by ADR-011:** an explicit **Landing** layer sits ahead of Bronze — raw CSVs land
+  byte-for-byte in the Lakehouse **Files** area (`Files/landing/`) before Bronze materializes
+  them into typed Delta **Tables**. Still one OneLake storage surface (same Lakehouse, Files vs
+  Tables area), so "one storage surface / zero egress" holds unchanged; ADR-011 refines this
+  decision, it does not reverse it.
 
 ### 3. Silver transform compute (replaces 5 AWS Glue PySpark jobs)
 **Decision: 5 Fabric Spark Notebooks (one per Glue job) — PySpark code ports ~1:1.**

@@ -1,7 +1,40 @@
 # Project Status — Home Credit Risk Pipeline (Fabric)
 
 ## ▶ RESUME HERE
-**Where we are (2026-07-01, `main`, PR #1 merged):** Full governance-framework port from the
+**Where we are (2026-07-02, `gate-0.5-option-b-adr-008-009`):** Gate 2 infra provisioning is
+**live and API-verified** — see `MIGRATION_JOURNEY.md` J-011. Fabric Trial capacity started
+(60-day, East Asia), workspace `home-credit-risk-dev` (type Fabric Trial) created with the
+trial capacity assigned, Lakehouse `home_credit_lakehouse` created inside it (SQL Analytics
+Endpoint auto-provisioned, `Success`), Entra ID App Registration `home-credit-fabric-sp` created
+with a client secret and granted Contributor on the workspace. `az` CLI and `fab` (Fabric) CLI
+installed in the dev container; both authenticated as the service principal and confirmed via
+live API calls, not from memory. `.env` populated with real
+`FABRIC_WORKSPACE_ID`/`FABRIC_LAKEHOUSE_ID`/`AZURE_TENANT_ID`/`AZURE_CLIENT_ID`/
+`AZURE_CLIENT_SECRET`/`ONELAKE_ENDPOINT` (not committed — `.gitignore:5`).
+`TEAMS_WEBHOOK_URL` parked — tenant lacks the M365 licence Power Automate's Teams connector
+needs; non-blocking for Gate 2.
+
+**Update (2026-07-02, J-012):** real Kaggle dataset pulled into `data/` (gitignored, 7 CSVs,
+row counts match baseline exactly) — Silver-logic work is now unblocked on data. Also added
+**ADR-011 (Proposed)**: an explicit **Landing** layer ahead of Bronze — raw CSV lands
+byte-for-byte in OneLake Lakehouse **Files** (`Files/landing/`), Bronze materializes from Landing
+into Delta **Tables** (Kaggle hit once, at Landing only). Same Lakehouse / one storage surface —
+refines ADR-006 §2, no scope/grain impact. Docs updated: ARCHITECTURE, PIPELINE_SPEC, CLAUDE.md,
+ADR-006 §2 cross-ref; `doc_reference_contract.py` green.
+
+**Next action:** port the 5 Silver notebooks (`glue/glue_silver_*.py` in the parent repo) into
+`tests/local/` under FB8 — dialect review per ADR-004/ADR-006 §3, proven locally (PySpark +
+delta-spark) before touching the Trial Warehouse. Then run ADR-007 Tier 0 (local pre-parity
+sample) before spending any real CU. Gate 2's actual conditions (G1-G5, G8 in
+`migration/governance/SIGN_OFF.md`) stay ☐ Pending until that produces parity evidence — today's
+work provisioned the infra, it did not run any Silver logic against it.
+
+**Do NOT:** leave the Fabric Trial capacity running between sessions — pause/deallocate it; the
+day-60/61 expiry behaviour is still (unverified), unchanged by today's provisioning.
+
+---
+
+**Where we were (2026-07-01, `main`, PR #1 merged):** Full governance-framework port from the
 parent repo `home-credit-pipeline` is complete and merged to `main` — CLAUDE.md, 3 static
 contracts, 11 agents, 8 docs, ADR-001..004 (Fabric versions), `scripts/gen_repo_map.py`,
 `architecture/REPO_MAP.md`, root logs, `learning/`, `.github/workflows/ci.yml`, `dbt_fabric/`
@@ -70,18 +103,25 @@ spent). All 3 contracts (`boundary_contract.py`, `identity_contract.py`,
 "Trial-capacity operational conditions" section — explicitly deferred by the Owner to be resolved
 when Gate 2/Trial-provisioning is actually reached, not now.
 
-**Next action — Gate 1 (New Repo + Contract Setup)**, per `migration/governance/SIGN_OFF.md`:
-this repo itself already satisfies "new dedicated repo created" and "`fabric-migration/`
-folder lifted in" (as `migration/`). Remaining Gate 1 conditions: wire
-`migration/governance/boundary_contract_fabric.py` into `.claude/hooks/` + CI (currently only
-`tests/boundary_contract.py` is wired), and confirm the parent repo's contracts are still green
-(no side-effects from this repo's work). Gate 1 itself does **not** provision any real Fabric
-resource — it is repo/contract wiring only. Only after Gate 1 is signed does provisioning begin,
-and per Gate 1.5/ADR-010 the first thing provisioned is the **Fabric Trial capacity**, not paid
-F2 — port the 5 Silver notebooks from the parent repo's `glue/glue_silver_*.py` locally first
-(dialect review per ADR-004/ADR-006 §3, proven via `tests/local/` before touching any capacity),
-then author/run the `warehouse/` T-SQL Gold procs directly on the Trial Warehouse (dialect +
-MERGE-maturity review per ADR-008).
+**Gate 1 SIGNED (2026-07-01, same branch)** — `migration/governance/boundary_contract_fabric.py`
+is now wired into `.claude/hooks/governance_guard.py` (runs alongside `tests/boundary_contract.py`
+for every governed boundary path, PostToolUse) and into `.github/workflows/ci.yml` (new step,
+after the parent `tests/boundary_contract.py` step). All 4 static gates confirmed green after
+wiring: `tests/boundary_contract.py`, `migration/governance/boundary_contract_fabric.py`,
+`tests/identity_contract.py`, `tests/doc_reference_contract.py`. Gate 1's "new repo" / "lifted-in
+folder" conditions are satisfied by this repo's existing state (it already *is* the dedicated
+Fabric repo; `migration/` already *is* the lifted-in design-phase record) — see the
+reinterpretation note in `migration/governance/SIGN_OFF.md` Gate 1 section. No real Fabric
+resource was provisioned as part of this gate (out of scope by design).
+
+**Next action — Gate 2 (Fabric Silver Parity), sequenced per Gate 1.5/ADR-010**: the first real
+provisioning step is the **Fabric Trial capacity** (ADR-010 D4), not paid F2 — this requires an
+explicit, separate Owner confirmation (uses a work account, possible billing) before being
+executed; it is NOT auto-continued from Gate 1 signing. Once authorised: port the 5 Silver
+notebooks from the parent repo's `glue/glue_silver_*.py` locally first (dialect review per
+ADR-004/ADR-006 §3, proven via `tests/local/` before touching any capacity), then author/run the
+`warehouse/` T-SQL Gold procs directly on the Trial Warehouse (dialect + MERGE-maturity review
+per ADR-008).
 
 **Do NOT:** provision any real Fabric resource before Gate 1 is signed. Do NOT provision paid F2
 before the Fabric Trial capacity is exhausted or a genuine full-scale parity run needs it

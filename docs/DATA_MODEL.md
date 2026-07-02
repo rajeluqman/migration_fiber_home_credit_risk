@@ -33,8 +33,13 @@ Kimball Star Schema = safer for a bounded Fabric Spark node pool. Sizing math in
 ### dim_applicant — SCD TYPE 2 — LOCKED (resume proof)
 - Columns : applicant_id, income, employment, start_date, end_date, is_current
 - Source  : application_train.csv
-- Mechanism: `dbt snapshot`, `strategy: check`, unchanged by the Fabric migration — the
-  dbt-fabric adapter is dialect-agnostic for snapshot logic (ADR-006 §4)
+- Mechanism: Fabric Warehouse T-SQL stored proc `dbo.usp_scd2_merge_dim_applicant`
+  (`warehouse/scd2/dim_applicant_scd2_merge.sql`; fallback `dbo.usp_scd2_fallback_dim_applicant`
+  in `dim_applicant_scd2_fallback.sql`) — dbt retired (ADR-008, supersedes ADR-006 §4). NULL-safe
+  check-column comparison (ADR-008 C3) on exactly 4 tracked columns (ADR-008 C2):
+  `name_income_type`, `name_education_type`, `name_family_status`, `cnt_children`. Match key stays
+  `applicant_id`; the one-current invariant is enforced by a THROW gate, both directions
+  (ADR-008 C4, `warehouse/dq/assert_dim_applicant_one_current.sql`).
 
 ### dim_loan_type — SCD TYPE 1
 - Columns : loan_type_id, loan_type_name

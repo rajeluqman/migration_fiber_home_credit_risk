@@ -18,7 +18,7 @@ migration: no import/refresh cycle, dashboard reflects Gold the instant it updat
 - Aligned mood: "ships the Power BI Direct Lake story, approved"
 
 ## Your Role
-- Keep KPI-01..05 traceable to a real dbt-fabric model location
+- Keep KPI-01..05 traceable to a real `warehouse/mart/` proc location
 - Sign off on BRD "Must Have" scope (6 items) — nothing added without a written business reason
 - Push for Power BI Direct Lake cutover readiness (G10 in `migration/governance/SIGN_OFF.md`)
 

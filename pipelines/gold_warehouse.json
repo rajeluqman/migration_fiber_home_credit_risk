@@ -1,10 +1,10 @@
 {
   "_stub": true,
-  "name": "gold_dbt",
-  "description": "Data Factory pipeline stub — dbt-fabric build against Fabric Warehouse (T-SQL) + Teams pass/fail alert. Real pipeline JSON is exported from the Fabric UI once a workspace is provisioned. See docs/PIPELINE_SPEC.md section 5.",
+  "name": "gold_warehouse",
+  "description": "Data Factory pipeline stub — invokes the Fabric Warehouse T-SQL stored procedures under warehouse/ (dbt retired, ADR-008) + Teams pass/fail alert. Real pipeline JSON is exported from the Fabric UI once a workspace is provisioned. See docs/PIPELINE_SPEC.md section 5.",
   "chain_position": "3 of 3",
   "activities": [
-    "dbt: dbt build (staging -> intermediate -> mart + snap_applicant snapshot)",
+    "sp: EXEC dbo.usp_build_dim_applicant, dbo.usp_build_fact_bureau_credit, dbo.usp_build_fact_installment_payment, dbo.usp_build_fact_loan_application (staging views -> intermediate views -> mart procs + SCD2 MERGE)",
     "alert: Teams connector on pass/fail (replaces Slack)"
   ]
 }

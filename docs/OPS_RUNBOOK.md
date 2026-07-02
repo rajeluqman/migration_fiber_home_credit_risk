@@ -24,10 +24,12 @@ Fix 2 : Node-pool memory limit → resize Spark pool (see `migration/benchmarks/
         for the parent repo's proven headroom to match)
 Rerun : Data Factory → clear failed activity → rerun pipeline
 
-### dbt-fabric test fail
-Check : `dbt test` output against Fabric Warehouse
+### warehouse/ T-SQL assertion proc fail (THROW)
+Check : Fabric Warehouse → Query history — which `usp_assert_*` proc THREW
 Fix 1 : FK violation → check Silver quarantine
-Fix 2 : SCD is_current > 1 per applicant → check `snap_applicant.sql` / `dim_applicant.sql`
+Fix 2 : SCD is_current > 1 or 0 per applicant (ADR-008 C4) → check
+        `warehouse/scd2/dim_applicant_scd2_merge.sql` (or `_fallback.sql`) /
+        `warehouse/mart/dim_applicant.sql`
 
 ## Provisioning a Fabric Workspace (not yet done — Gate 0 unsigned)
 
@@ -36,8 +38,8 @@ This is a placeholder for the real provisioning runbook once
 
 1. Create Fabric Workspace, assign F-SKU capacity.
 2. Create OneLake Lakehouse items (Bronze, Silver, Gold).
-3. Create a Fabric Warehouse for Gold, configure `dbt_fabric/profiles.yml` `type: fabric`
-   pointing at its SQL endpoint.
+3. Create a Fabric Warehouse for Gold; deploy the `warehouse/` T-SQL tree (staging views,
+   intermediate views, mart procs, SCD2 procs, DQ THROW procs) against its SQL endpoint.
 4. Register a Microsoft Entra ID service principal (`AZURE_CLIENT_ID`/`AZURE_CLIENT_SECRET`)
    with Contributor role on the workspace — see `.env.example`.
 5. Create the 3 chained Data Factory pipelines per `docs/PIPELINE_SPEC.md` §5.

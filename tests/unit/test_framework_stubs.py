@@ -13,8 +13,8 @@ def test_notebooks_dir_exists():
     assert (REPO / "notebooks").is_dir()
 
 
-def test_dbt_fabric_project_root_exists():
-    assert (REPO / "dbt_fabric").is_dir()
+def test_warehouse_project_root_exists():
+    assert (REPO / "warehouse").is_dir()
 
 
 def test_migration_provenance_folder_exists():

@@ -42,7 +42,7 @@ What **is** true today:
 | Ingest | Fabric Notebook (Kaggle API download) → Data Factory pipeline |
 | Bronze/Silver/Gold storage | OneLake Lakehouse (Delta, native ACID) |
 | Silver transform | Fabric Spark Notebook (PySpark, Runtime 1.3 = Spark 3.5) |
-| Gold transform | dbt Core + dbt-fabric adapter (`type: fabric`) — Fabric Warehouse T-SQL |
+| Gold transform | Fabric Warehouse T-SQL stored procedures (`warehouse/`) — dbt retired, ADR-008 |
 | DQ gate | Inline notebook assertions (PySpark `assert`, WARN/FAIL semantics) |
 | DQ catalog | Purview DQ (profiling + lineage, not a gate) |
 | Orchestration | Data Factory pipeline (3 chained pipelines) |

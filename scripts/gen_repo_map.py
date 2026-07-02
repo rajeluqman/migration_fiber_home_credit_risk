@@ -2,8 +2,9 @@
 """Repo-map generator — the NAVIGATION half of the ANTI-SHORTCUT PROTOCOL (see CLAUDE.md).
 
 Ported from the parent repo's `scripts/gen_repo_map.py`, retargeted to this Fabric-migration
-repo's real layout (notebooks/, dbt_fabric/, pipelines/, migration/, docs/ADR/) instead of the
-parent repo's (glue/, dbt_home_credit/, airflow/dags/, gx/).
+repo's real layout (notebooks/, warehouse/, pipelines/, migration/, docs/ADR/) instead of the
+parent repo's (glue/, dbt_home_credit/, airflow/dags/, gx/). Retargeted again per ADR-008 (dbt
+retired — Gold is `warehouse/`, not `dbt_fabric/`).
 
 Design rule (unchanged): the map is a POINTER, never a substitute for reading the file. It is
 100% DERIVED — purpose extracted from the file's own docstring/heading/leading comment, edges
@@ -29,7 +30,7 @@ REPO = Path(__file__).resolve().parent.parent
 MAP_PATH = REPO / "architecture" / "REPO_MAP.md"
 
 EXCLUDE = {
-    ".gitignore", ".env.example", "dbt_fabric/profiles.yml",
+    ".gitignore", ".env.example",
     ".claude/settings.json", "architecture/REPO_MAP.md",
 }
 EXCLUDE_PREFIX = (".github/",)
@@ -37,13 +38,12 @@ EXCLUDE_PREFIX = (".github/",)
 ROLE_LABELS = [
     ("adr", "Architecture Decision Records"),
     ("doc", "Top-level docs"),
-    ("dbt:staging", "dbt — staging"),
-    ("dbt:intermediate", "dbt — intermediate"),
-    ("dbt:mart", "dbt — mart"),
-    ("dbt:snapshot", "dbt — snapshots"),
-    ("dbt:test", "dbt — tests"),
-    ("dbt:macro", "dbt — macros"),
-    ("dbt:model", "dbt — other"),
+    ("warehouse:staging", "Warehouse — staging"),
+    ("warehouse:intermediate", "Warehouse — intermediate"),
+    ("warehouse:mart", "Warehouse — mart"),
+    ("warehouse:scd2", "Warehouse — SCD2 procs"),
+    ("warehouse:dq", "Warehouse — DQ THROW procs"),
+    ("warehouse:other", "Warehouse — other"),
     ("notebook", "Fabric Spark Notebooks"),
     ("pipeline", "Data Factory pipelines"),
     ("migration", "Migration artefacts (benchmarks, validation, staging)"),
@@ -78,20 +78,18 @@ def role_of(rel: str) -> str:
         return "adr"
     if rel.startswith("docs/"):
         return "doc"
-    if rel.startswith("dbt_fabric/models/staging/"):
-        return "dbt:staging"
-    if rel.startswith("dbt_fabric/models/intermediate/"):
-        return "dbt:intermediate"
-    if rel.startswith("dbt_fabric/models/mart/"):
-        return "dbt:mart"
-    if rel.startswith("dbt_fabric/snapshots/"):
-        return "dbt:snapshot"
-    if rel.startswith("dbt_fabric/tests/"):
-        return "dbt:test"
-    if rel.startswith("dbt_fabric/macros/"):
-        return "dbt:macro"
-    if rel.startswith("dbt_fabric/"):
-        return "dbt:model"
+    if rel.startswith("warehouse/staging/"):
+        return "warehouse:staging"
+    if rel.startswith("warehouse/intermediate/"):
+        return "warehouse:intermediate"
+    if rel.startswith("warehouse/mart/"):
+        return "warehouse:mart"
+    if rel.startswith("warehouse/scd2/"):
+        return "warehouse:scd2"
+    if rel.startswith("warehouse/dq/"):
+        return "warehouse:dq"
+    if rel.startswith("warehouse/"):
+        return "warehouse:other"
     if rel.startswith("notebooks/"):
         return "notebook"
     if rel.startswith("pipelines/"):

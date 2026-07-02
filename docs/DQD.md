@@ -17,7 +17,7 @@
 | DAYS_EMPLOYED anomaly | 365243 → NULL | HIGH |
 | SK_ID_CURR | UNIQUE per table | HIGH |
 
-## Gold Suite (dbt-fabric tests)
+## Gold Suite (warehouse/ T-SQL THROW assertion procs, dbt retired per ADR-008)
 | Check | Rule | Severity |
 |-------|------|----------|
 | fact_loan_application.SK_ID_CURR | NOT NULL, UNIQUE | CRITICAL |

@@ -66,14 +66,31 @@ After Gate 0 is signed:
 - All 4 parent repo contracts still passing in the parent repo (no side-effects from
   branch work on the parent).
 
+**Reinterpretation note (2026-07-01, per `PROJECT_STATUS.md` "Next action" entry):** this repo
+(`migration_fiber_home_credit_risk`) *is* the dedicated Fabric repo the design-phase
+`fabric-migration/` folder was meant to be lifted into — it already carries the full
+governance-framework port (CLAUDE.md, agents, contracts, docs, ADR-001..004) plus the
+design-phase record as `migration/` (ADR-005/006/007, benchmarks, parity plan, this file). No
+second repo is being created; "new repo initialised" and "`fabric-migration/` lifted in" are
+satisfied by this repo's existing state, not by a fresh `git init` elsewhere. The remaining,
+still-open work is the contract-wiring and parity conditions below.
+
 | Condition | Evidence | Status |
 |---|---|---|
-| New repo initialised, `fabric-migration/` contents committed | GitHub repo URL | ☐ Pending |
-| `boundary_contract_fabric.py` exits 0 in CI | CI run link | ☐ Pending |
-| Parent `tests/boundary_contract.py` still exits 0 | Parent CI run link | ☐ Pending |
-| ADR-005 status updated to **Accepted** in new repo | Commit hash | ☐ Pending |
+| Dedicated Fabric repo exists with `migration/` (design-phase record) inside it | this repo, `migration/` at repo root | ☑ Signed |
+| `migration/governance/boundary_contract_fabric.py` wired into `.claude/hooks/` | `.claude/hooks/governance_guard.py` `BOUNDARY_SCRIPTS` tuple runs it alongside `tests/boundary_contract.py` on every governed-path Edit/Write/MultiEdit (PostToolUse); confirmed via manual PostToolUse simulation, exit 0 | ☑ Signed |
+| `migration/governance/boundary_contract_fabric.py` wired into CI | `.github/workflows/ci.yml` — "Boundary contract — portable Gate 1 copy" step | ☑ Signed |
+| `boundary_contract_fabric.py` exits 0 | local run 2026-07-01: `✅ fabric boundary contract OK` | ☑ Signed |
+| Parent `tests/boundary_contract.py` still exits 0 (no side-effects from wiring) | local run 2026-07-01: `✅ fabric boundary contract OK` | ☑ Signed |
+| `tests/identity_contract.py` still exits 0 | local run 2026-07-01: `✅ identity contract OK (SK_ID_CURR / SCD2 grain)` | ☑ Signed |
+| `tests/doc_reference_contract.py` still exits 0 | local run 2026-07-01: `DOC-REFERENCE CONTRACT: OK — 22 doc(s)` | ☑ Signed |
+| ADR-005 status is **Accepted** | `docs/ADR/ADR-005-fabric-full-migration-decision.md:3` — "Status: Accepted — Gate 0 signed 2026-07-01" | ☑ Signed |
 
-**Gate 1 outcome:** ☐ OPEN
+**Gate 1 outcome:** ☑ SIGNED 2026-07-01 — repo/contract wiring complete, all 4 static gates
+green. No real Fabric resource provisioned (out of scope for this gate). Next: Gate 1.5
+sequencing (already signed, see above) governs *how* Gate 2 work proceeds — first real
+provisioning step is the Fabric Trial capacity (ADR-010 D4), which requires an explicit,
+separate Owner confirmation before being executed (see `PROJECT_STATUS.md` "Do NOT").
 
 ---
 

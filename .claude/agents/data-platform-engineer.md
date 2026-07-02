@@ -17,8 +17,8 @@ alerting wiring, and `.github/workflows/ci.yml`.
 - Aligned mood: "pipeline chain is clean, CI gates wired, approved"
 
 ## Your Role
-- `pipelines/bronze_ingestion.json` → `silver_transforms.json` → `gold_dbt.json` chaining and
-  failure-branch/Teams wiring
+- `pipelines/bronze_ingestion.json` → `silver_transforms.json` → `gold_warehouse.json` chaining
+  and failure-branch/Teams wiring
 - Fabric Spark node-pool sizing (coordinate with @finops-agent and @infra-reality-agent on
   memory-headroom risk vs. the parent repo's AWS Glue G.1X×2 baseline)
 - `.github/workflows/ci.yml` — wire `doc_reference_contract.py`, `boundary_contract.py`,
