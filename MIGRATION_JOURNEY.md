@@ -1146,13 +1146,23 @@ only fires on push/PR to `main`, not arbitrary branch pushes). First CI run
 SCD2 file changes, never regenerated) — fixed with `python scripts/gen_repo_map.py` + commit.
 Second run (`28768336125`) fully green, `boundary_contract_fabric.py` step passing. **G12: CLOSED.**
 
-**G9 (Teams alert) — parked, real licence-tier gap, not a permissions issue this time:** Confirmed
-two independent dead ends in the same Teams tenant: (1) classic "Connectors" (Incoming Webhook) —
-retired product-wide by Microsoft, no longer offered in any tenant; (2) the modern "Workflows" app
-replacement — not present/installed in this tenant at all (not even after confirming Global Admin
-access). This reproduces J-011's finding under a different, now-admin-capable account, confirming
-it's the tenant's M365 licence tier, not an SP/account-permission gap. Parked exactly like
-`TEAMS_WEBHOOK_URL` was parked at J-011 — G9 stays open pending a fuller M365 licence.
+**G9 (Teams alert) — parked, root cause now fully diagnosed as a tenant-type limitation, not
+licence/permissions:** Confirmed three independent dead ends in the same Teams tenant: (1) classic
+"Connectors" (Incoming Webhook) — retired product-wide by Microsoft, no longer offered in any
+tenant; (2) the modern "Workflows" app replacement — not present/installed in this tenant at all
+(not even after confirming Global Admin access); (3) building the flow directly in the Power
+Automate portal (`make.powerautomate.com`, bypassing Teams entirely) — the "Post message in a
+chat or channel" Teams connector's OAuth connection creation failed with `Failed to create OAuth
+connection: ClientError: OAuth2Certificate authorization flow failed for service 'First Party
+Azure Active Directory'. Microsoft Accounts are not allowed by their BAP administrator.` This is a
+Power Platform (BAP) tenant-type policy: this Fabric trial tenant is MSA/personal-signup-rooted
+(created via a Gmail address), and Power Platform blocks OAuth for first-party Microsoft services
+(Teams among them) on MSA-rooted tenants as a platform-level policy — not a toggle a Global Admin
+can flip, unlike the earlier Fabric tenant settings. Confirms this reproduces and fully explains
+J-011's original failure too (same underlying tenant-type cause, not the M365-licence framing
+originally guessed there). **Owner decision (2026-07-06): do NOT substitute Slack** (hard veto,
+FB4/`boundary_contract_fabric.py`, @scope-guardian) — Owner will resolve the Teams/tenant
+situation out-of-band later. G9 stays parked until then; no further attempts this session.
 
 **G10 (Power BI Direct Lake) — Owner-owned evidence, not yet captured:** No Semantic Model item
 exists yet over `home_credit_warehouse` (`GET items?type=SemanticModel` → empty). Per
