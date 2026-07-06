@@ -282,3 +282,12 @@ against real Fabric Warehouse compute.** Full detail: `MIGRATION_JOURNEY.md` J-0
 - Real CU still unverified against a metering API — `admin/capacities` now `403
   InsufficientScopes` (endpoint exists, SP lacks the Fabric Admin API permission grant), clearer
   diagnosis than J-016's `404` but still unresolved. See MIGRATION_JOURNEY.md J-023, G11.
+
+## 2026-07-06 (session 7 cont.) — G9 Slack alert wiring + fire-tests
+- 1 local urllib POST to Slack webhook (connectivity test) — no Fabric compute.
+- 2 throwaway pipeline runs (Script `THROW` → WebActivity→Slack; and InvokePipeline[Failed]→
+  WebActivity→Slack) — seconds each, negligible CU, both deleted after.
+- 1 Fabric `WebForPipeline` connection + reused the existing Warehouse/InvokePipeline connections
+  — metadata only, no compute cost.
+- Production alert wired into `silver_transforms` (`notify_slack_gold_failure`) — no run cost until
+  a real Gold failure triggers it. See MIGRATION_JOURNEY.md J-025.

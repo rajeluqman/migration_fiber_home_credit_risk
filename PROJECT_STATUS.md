@@ -1,8 +1,24 @@
 # Project Status — Home Credit Risk Pipeline (Fabric)
 
 ## ▶ RESUME HERE
-**Where we are (2026-07-06, `gate-0.5-option-b-adr-008-009`), latest — GATE 4 OPEN, G12 CLOSED,
-real end-to-end Data Factory pipeline chain built and run (J-023).**
+**Where we are (2026-07-06, `gate-0.5-option-b-adr-008-009`), latest — GATE 4: G9 + G12 PASSED;
+only G10 + G11 remain (both Owner-browser tasks).**
+J-024/J-025: Alerting moved **Teams → Slack** (ADR-013) after Teams proved unusable in this
+MSA-rooted trial tenant (Power Platform BAP blocks first-party OAuth + needs paid M365 licence).
+This required an explicit **Owner override of a @scope-guardian VETO** — recorded, not rescinded;
+FB4 Slack ban lifted for alerting only (FB1-FB3 still hard bans). Repo-wide refactor done (~20
+files, ADR-013 anchor). **G9 now PASSED with real evidence:** a `WebActivity` on a Data Factory
+`Failed` branch POSTs to Slack via a Fabric `WebForPipeline` connection (webhook URL held in the
+connection store, never in git); fire-tested twice (Script`[Failed]`→Slack, and the exact
+production `InvokePipeline[Failed]`→Slack path), Owner confirmed all messages in-channel. Wired
+into production `silver_transforms` as `notify_slack_gold_failure` on `trigger_gold_warehouse[Failed]`.
+**Next: G10** (Owner builds a Power BI Direct Lake report over the Gold tables + screenshots) **and
+G11** (CU cost via the Fabric Capacity Metrics app, or grant the SP's Entra app the Fabric Admin
+API permission — `admin/capacities` = `403 InsufficientScopes`). Once both captured, Gate 4 →
+CLOSED, then Gate 5 (AWS/Snowflake teardown). Full detail: `MIGRATION_JOURNEY.md` J-024/J-025.
+
+**Previous checkpoint — GATE 4 OPEN, G12 CLOSED, real end-to-end Data Factory pipeline chain built
+and run (J-023).**
 J-023: Built the 3 real Fabric Data Factory pipelines (`pipelines/` was still `_stub: true`
 placeholders) — `bronze_ingestion` → `silver_transforms` → `gold_warehouse`, chained via
 `InvokePipeline`. Hit and resolved 2 real platform gaps: (1) SP connection-creation `401` — root

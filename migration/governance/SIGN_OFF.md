@@ -142,16 +142,18 @@ Full pipeline run in Fabric, alerting live, BI confirmed.
 
 | Condition (ADR-007 reference) | Evidence | Owner | Status |
 |---|---|---|---|
-| G9: **Slack** alert fires on simulated failure (was Teams — ADR-013) | Slack message screenshot + pipeline failure-branch run log | @data-platform-engineer | ☐ Pending — **mechanism changed Teams→Slack, wiring in progress**. Teams proven unusable in this MSA/personal-signup-rooted tenant: Power Platform (BAP) blocks OAuth for first-party Microsoft services (incl. Teams) as a platform policy, not a Global-Admin toggle — confirmed via 3 dead ends (classic Connectors retired product-wide, Workflows app absent, Power Automate portal OAuth rejected with `"Microsoft Accounts are not allowed by their BAP administrator"`); also needs a paid M365 licence. **Owner overrode @scope-guardian's VETO (J-024)** and re-admitted a Slack Incoming Webhook for pipeline-failure alerting (ADR-013, FB4 ban lifted). Docs/contracts updated; real Slack fire-test evidence pending the `SLACK_WEBHOOK_URL` value + a simulated Gold failure. See `MIGRATION_JOURNEY.md` J-023/J-024. |
+| G9: **Slack** alert fires on simulated failure (was Teams — ADR-013) | Slack message (Owner-confirmed) + Data Factory failure-branch run | @data-platform-engineer | ☑ **PASSED 2026-07-06** (Owner visually confirmed). Teams proven unusable in this MSA/personal-signup-rooted tenant (Power Platform BAP blocks first-party OAuth + needs paid M365 licence — 3 dead ends incl. Power Automate OAuth rejected `"Microsoft Accounts are not allowed by their BAP administrator"`). **Owner overrode @scope-guardian's VETO (J-024)**; Slack Incoming Webhook re-admitted for pipeline-failure alerting (ADR-013, FB4 lifted). **Real fire-test:** a `WebActivity` on a Script `THROW`'s `Failed` branch POSTed to Slack (Owner confirmed message in channel); the exact production path `InvokePipeline[Failed]→WebActivity→Slack` then independently verified via a throwaway parent invoking a failing child (Owner confirmed 3rd message). Wired into production `silver_transforms` as `notify_slack_gold_failure` on `trigger_gold_warehouse[Failed]` — any `gold_warehouse` failure fires it. Secret held in a Fabric `WebForPipeline` connection (GUID `ccc07b99…` in git, URL never committed). See `MIGRATION_JOURNEY.md` J-023/J-024/J-025. |
 | G10: Power BI Direct Lake report loads without error | Report screenshot + semantic model log | Owner | ☐ Pending — no Semantic Model item exists yet over `home_credit_warehouse`; needs Owner to open Power BI/Fabric in browser, create a Direct Lake report against the Gold tables, and capture the screenshot (this evidence type is explicitly Owner/browser-captured per this table, not API-automatable) |
 | G11: Fabric CU cost post-first-run within estimate from Gate 0 | CU usage screenshot from Fabric admin | @finops-agent | ☐ Pending — confirmed real limitation: `admin/capacities` API returns `403 InsufficientScopes` for the SP (a clearer diagnosis than J-016's earlier `404` — the endpoint exists but the SP's Entra app registration lacks the Fabric Admin API permission grant, a separate config step from the tenant settings fixed this session). Needs either that Entra API-permission grant, or Owner to check the "Microsoft Fabric Capacity Metrics" app in browser. |
 | G12: `boundary_contract_fabric.py` exits 0 in new repo CI | CI run link | @scope-guardian | ☑ **CLOSED** — [CI run 28768336125](https://github.com/rajeluqman/migration_fiber_home_credit_risk/actions/runs/28768336125) on PR #2, fully green (also fixed a stale `REPO_MAP.md` blocking full-green CI) |
 
-**Gate 4 outcome:** ☐ OPEN — G12 closed; real end-to-end pipeline chain (bronze_ingestion →
-silver_transforms → gold_warehouse) built and run for real via Fabric Data Factory this session
-(J-023), Gold row counts verified matching the J-022 baseline exactly. G9/G10/G11 remain open on
-real platform/licence/scope gaps documented above, not implementation gaps — see J-023 for full
-evidence.
+**Gate 4 outcome:** ☐ OPEN — **G9 + G12 PASSED**; real end-to-end pipeline chain (bronze_ingestion
+→ silver_transforms → gold_warehouse) built and run for real via Fabric Data Factory (J-023), Gold
+row counts verified matching the J-022 baseline exactly; Slack failure-alert wired + fire-tested
+(J-025). **G10 + G11 remain — both Owner-browser-action items** (G10: build a Power BI Direct Lake
+report over the Gold tables + screenshot; G11: CU cost via the Fabric Capacity Metrics app or an
+Entra Admin-API permission grant — `admin/capacities` gives `403 InsufficientScopes` for the SP).
+Once G10/G11 are captured, Gate 4 → CLOSED and Gate 5 (AWS/Snowflake teardown) can be considered.
 
 ---
 

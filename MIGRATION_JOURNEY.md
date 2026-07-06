@@ -1256,3 +1256,51 @@ activity on the `gold_warehouse` failure branch** POSTing to `SLACK_WEBHOOK_URL`
 fire-test on a simulated Gold failure and a Slack-message screenshot. Blocked only on the Owner
 providing the real Slack webhook URL (a `https://hooks.slack.com/services/...` from a Slack app's
 Incoming Webhooks). G9 stays ☐ Pending until that fire-test produces evidence.
+
+## J-025 · 2026-07-06 (session 7 cont.) · G9 CLOSED — Slack failure-alert wired into the real pipeline + fire-tested
+**Goal:** Turn the ADR-013 Slack decision into a working, evidenced G9 — a Slack alert that fires
+from a real Data Factory pipeline failure (not just a local script).
+
+**Connectivity test first:** Owner set the webhook in `.env` (as `SLACK_WEBHOOK`, vs the docs'
+`SLACK_WEBHOOK_URL` — noted; the pipeline uses a Fabric connection, not the env var, so it's only a
+local-script naming nit). A plain `urllib` POST (no `slack_sdk`, per ADR-013) returned `HTTP 200
+'ok'`; Owner confirmed the message in-channel.
+
+**Secret handling — no webhook URL in git:** created a Fabric `WebForPipeline` **connection**
+(`slack_pipeline_alert_conn`, id `ccc07b99-ad98-48c7-8b2e-b75bc73e8152`, `Anonymous` cred, the
+webhook as `baseUrl`). The pipeline JSON references only the connection GUID; the actual
+`hooks.slack.com` URL lives in Fabric's connection store, never committed. `skipTestConnection`
+had to be `false` (this connection type rejects skipping) — the create succeeded, so Slack accepted
+the test. Verified `grep hooks.slack.com pipelines/` = clean after re-export.
+
+**Fire-test 1 (WebActivity → Slack from a real Fabric failure):** throwaway pipeline —
+`Script`(`THROW 51000,…`) → `WebActivity` on the `Failed` branch POSTing the Slack alert. Ran it:
+pipeline reported `Completed` (the failure was caught by the failure-branch), Owner confirmed the
+red-alert message in Slack. Proves `Script[Failed] → WebActivity → Slack`.
+
+**Fire-test 2 (the exact production path — InvokePipeline[Failed] → WebActivity):** because
+Fabric/ADF treats multiple failure-dependencies as **AND** (all must fail), a single "any Gold
+activity failed" handler inside `gold_warehouse` isn't possible cleanly — so the robust pattern is
+to catch it one level up: any failure inside `gold_warehouse` fails the `trigger_gold_warehouse`
+`InvokePipeline` activity in `silver_transforms`, whose `Failed` branch fires the alert. Verified
+this specific link with a throwaway parent invoking a deliberately-failing child (child = pure
+`THROW`, no handler → child pipeline `Failed`; parent `InvokePipeline[waitOnCompletion]` → activity
+`Failed` → `WebActivity` on `Failed` → Slack). Parent reported `Completed` (failure caught), Owner
+confirmed the 3rd Slack message. Proves the real wiring, not inferred.
+
+**Production wiring landed:** added `notify_slack_gold_failure` (`WebActivity`, Slack connection)
+to `silver_transforms`, depending on `trigger_gold_warehouse[Failed]`. Any `gold_warehouse` failure
+now fires the Slack alert in the real nightly chain. `pipelines/silver_transforms.json` re-exported
+(now shows the 7th activity + the connection GUID — GUID is a reference, not a secret). Both
+throwaway pipelines deleted; workspace confirmed back to 12 items, no `zz_*` leftovers.
+
+**Evidence trail note:** G9's formal evidence type is a "Slack message" — the Owner visually
+confirmed all three fire-test messages in-channel (the definitive confirmation). A saved screenshot
+is optional portfolio polish the Owner can capture anytime; the mechanism is proven and wired.
+
+**Cost:** 2 short throwaway pipeline runs (Script THROW + InvokePipeline, seconds each, negligible
+CU) + 1 Warehouse `THROW` execution. No Silver/Spark compute this entry.
+
+**Status: G9 PASSED.** Gate 4 now has **G9 + G12 passed**; **G10 (Power BI Direct Lake report) and
+G11 (CU cost) remain Owner-browser-action items** — Gate 4 stays ☐ OPEN until those two are
+captured, then it can be marked CLOSED and Gate 5 (AWS/Snowflake teardown) considered.

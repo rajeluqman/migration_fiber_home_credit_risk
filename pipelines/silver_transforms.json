@@ -137,6 +137,36 @@
         "externalReferences": {
           "connection": "a5ab3da0-dcb7-4a80-9120-3e4705a81281"
         }
+      },
+      {
+        "name": "notify_slack_gold_failure",
+        "type": "WebActivity",
+        "dependsOn": [
+          {
+            "activity": "trigger_gold_warehouse",
+            "dependencyConditions": [
+              "Failed"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.01:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "method": "POST",
+          "relativeUrl": "",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": "{\"text\": \":rotating_light: *Home Credit \\u2014 Gold build FAILED* :rotating_light:\\nThe gold_warehouse pipeline (dim_applicant / fact_* T-SQL build) failed inside the nightly chain. Fired from the Data Factory failure branch on trigger_gold_warehouse (ADR-013, G9).\"}"
+        },
+        "externalReferences": {
+          "connection": "ccc07b99-ad98-48c7-8b2e-b75bc73e8152"
+        }
       }
     ]
   }
