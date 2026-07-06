@@ -8,7 +8,7 @@
 > **This is a pointer, not a cache.** It tells you which file to open — then READ THAT
 > FILE FRESH before you edit or assert about it (ANTI-SHORTCUT PROTOCOL, CLAUDE.md).
 
-**95 files mapped.**
+**96 files mapped.**
 
 ## Architecture Decision Records
 
@@ -75,8 +75,7 @@
 
 | File | Purpose | Uses | Used by |
 |------|---------|------|---------|
-| `warehouse/scd2/dim_applicant_scd2_fallback.sql` | SCD2 fallback engine (ADR-008 C5 + "Fallback" text) — 2-step UPDATE(expire) + INSERT(new | — | — |
-| `warehouse/scd2/dim_applicant_scd2_merge.sql` | SCD2 primary engine (ADR-008, J-003 lock: "A1" = Fabric Warehouse MERGE) for dim_applicant. | — | — |
+| `warehouse/scd2/dim_applicant_scd2_fallback.sql` | SCD2 engine (ADR-008 C5) — 2-step UPDATE(expire) + INSERT(new version), NO MERGE statement. | — | — |
 
 ## Warehouse — DQ THROW procs
 
@@ -129,9 +128,11 @@
 | `migration/benchmarks/SILVER_BASELINE.md` | Silver Layer Baseline — Full-Scale AWS Glue Output (Pre-Migration) | — | — |
 | `migration/benchmarks/SNOWFLAKE_STAGING_BASELINE.md` | Snowflake STAGING Baseline — Pre-Migration Gold/Mart Load | — | — |
 | `migration/benchmarks/SOURCE_BASELINE.md` | Source CSV Baseline — Pre-Migration Ground Truth | — | — |
+| `migration/governance/GATE3_ARCHITECT_REVIEW_J021.md` | Gate 3 — @data-architect verdict on the J-021 Fabric Warehouse dialect/logic fix | — | — |
 | `migration/governance/SIGN_OFF.md` | Migration Sign-Off Register | — | — |
 | `migration/governance/boundary_contract_fabric.py` | Fabric-stack boundary contract — portable gate for the new dedicated Fabric repo. | — | — |
 | `migration/staging/DUAL_RUN_PLAN.md` | Dual-Run Plan — Parallel Operation Before Cutover | — | — |
+| `migration/superseded/dim_applicant_scd2_merge.sql` | SUPERSEDED 2026-07-06 (J-021, migration/governance/GATE3_ARCHITECT_REVIEW_J021.md, Condition 3). | — | — |
 | `migration/validation/PARITY_TEST_PLAN.md` | Parity Test Plan | — | — |
 | `migration/validation/parity_check.py` | Parity checker for the Fabric migration. | — | — |
 
