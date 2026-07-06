@@ -33,9 +33,16 @@ Concretely, the retired `dbt_fabric/` tree maps to a new `warehouse/` T-SQL tree
 - **Staging/intermediate** (`stg_*`, `int_*`) → T-SQL views or CTAS procs.
 - **Marts** (`dim_applicant` + the 3 facts) → build procs, tables land as Delta in OneLake
   automatically (read by Power BI Direct Lake, unchanged).
-- **SCD2** (was `snap_applicant.sql`, `dbt snapshot`, `strategy: check`) → a T-SQL SCD2 `MERGE`
-  stored proc. Fallback: a 2-step `UPDATE`(expire) + `INSERT`(new version) if Fabric Warehouse
-  `MERGE` proves immature (maturity **unverified** — confirm against real Fabric before build).
+- **SCD2** (was `snap_applicant.sql`, `dbt snapshot`, `strategy: check`) → a 2-step
+  `UPDATE`(expire) + `INSERT`(new version) T-SQL proc. **Amended 2026-07-06 (J-021,
+  `migration/governance/GATE3_ARCHITECT_REVIEW_J021.md`):** the originally-primary MERGE-based
+  proc is retired — Fabric Warehouse does not support the `OUTPUT` clause on any statement,
+  confirmed against real Fabric Warehouse compute, making the MERGE proc's design (which needed
+  `OUTPUT ... INTO @touched`) structurally impossible on this engine, not merely immature. The
+  2-step fallback, which never used `OUTPUT` or a table variable, is now the **sole** SCD2
+  mechanism. This is the same "if MERGE proves immature" contingency this ADR always named — the
+  trigger turned out to be OUTPUT-unsupported rather than MERGE-unsupported specifically. The
+  retired proc is archived at `migration/superseded/dim_applicant_scd2_merge.sql`, not deleted.
 - **Tests** (dbt `assert_*`) → T-SQL assertion stored procs that `THROW`, wired as Data Factory
   FAIL-branch gates (mirrors the Silver inline-assertion pattern, ADR-006 §5).
 - **Surrogate keys** (dbt `md5` macro) → `HASHBYTES('SHA2_256', ...)`.
@@ -53,9 +60,15 @@ the one-current invariant are preserved exactly (see C2/C4).
   never `SELECT *`. Changing this set requires a new ADR.
 - **C3 — NULL-safe change detection is mandatory.** T-SQL `old.col <> new.col` returns UNKNOWN
   when either side is NULL, silently missing a version cut on a NULL transition. The proc MUST use
-  NULL-safe comparison (`EXCEPT`, or `IS DISTINCT FROM` emulation
-  `((a<>b) OR ((a IS NULL) <> (b IS NULL)))`). A side-by-side proof against dbt output on a
-  NULL-transition row is required, not assumed.
+  NULL-safe comparison, in **pure-predicate form**:
+  `(a<>b) OR (a IS NULL AND b IS NOT NULL) OR (a IS NOT NULL AND b IS NULL)`. **Corrected
+  2026-07-06 (J-021):** an earlier version of this condition stated the compact form
+  `((a<>b) OR ((a IS NULL) <> (b IS NULL)))` — this is **invalid T-SQL on any SQL Server-family
+  engine** (confirmed live against real Fabric Warehouse compute: SQL Server has no boolean type
+  for an `IS NULL` predicate to evaluate to a value that `<>` can compare), not a valid-but-terse
+  restatement. The predicate form above is what dbt's own generated SQL actually produces (see
+  `warehouse/PROOF_C3_C4_C5.md`) and is what C3 always intended. A side-by-side proof against dbt
+  output on a NULL-transition row is required, not assumed.
 - **C4 — One-current invariant guarded by a THROW gate, both directions, every run.** A post-MERGE
   assertion proc `THROW`s if any `applicant_id` has **>1** current row OR **0** current rows.
   "Exactly one", not "at most one". Wired as a Data Factory FAIL branch.
@@ -115,6 +128,9 @@ No extra marts or columns smuggled in during the rewrite.
 **(−)** SCD2/idempotency correctness now rests on hand-written T-SQL; C3/C4/C5 are the load-bearing
   guards and will be re-checked against a side-by-side proof before gate sign-off.
 **(−)** Fabric Warehouse `MERGE` maturity is unverified — the 2-step fallback exists for this.
+  **Resolved 2026-07-06 (J-021):** confirmed against real Fabric Warehouse compute that `OUTPUT`
+  is unsupported on any statement, which is the specific reason the MERGE-based proc cannot work
+  — the 2-step fallback (`dim_applicant_scd2_fallback.sql`) is now the sole SCD2 mechanism.
 
 ## Sign-off (drafted-text review complete 2026-07-01; Owner GO pending)
 - [x] **@data-architect** — 2026-07-01 APPROVE of the drafted text; C1–C8 verified line-by-line.

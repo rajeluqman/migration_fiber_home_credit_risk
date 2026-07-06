@@ -1,3 +1,19 @@
+-- SUPERSEDED 2026-07-06 (J-021, migration/governance/GATE3_ARCHITECT_REVIEW_J021.md, Condition 3).
+-- Retired: Fabric Warehouse does not support the OUTPUT clause on ANY statement or target
+-- (SQL error 15868, "OUTPUT is not supported") — confirmed live against real Fabric Warehouse
+-- compute, independent of the also-unsupported table-variable declaration below (error 15871).
+-- This proc's design (MERGE ... OUTPUT ... INTO @touched, then a keyed follow-up INSERT) is
+-- therefore structurally impossible on Fabric Warehouse, not merely immature. Per @data-architect
+-- APPROVE-CONDITIONAL verdict (GATE3_ARCHITECT_REVIEW_J021.md Q3), the pre-authorised 2-step
+-- fallback (warehouse/scd2/dim_applicant_scd2_fallback.sql) is promoted to the SOLE SCD2
+-- mechanism for dim_applicant — this is within ADR-008's own contingency envelope (ADR-008:36-38,
+-- :117 already named the fallback for exactly this case), not a re-grain or a new ADR.
+-- Kept here, not deleted, as the historical record of what was tried and why it doesn't work on
+-- this engine — do not resurrect this design without first confirming Fabric Warehouse has added
+-- OUTPUT-clause support.
+--
+-- ==== Original file content below, unmodified ====
+--
 -- SCD2 primary engine (ADR-008, J-003 lock: "A1" = Fabric Warehouse MERGE) for dim_applicant.
 -- Replaces dbt_fabric/snapshots/snap_applicant.sql (`strategy: check`, unique_key='applicant_id',
 -- retired). Match key stays applicant_id (C6) — never applicant_sk. WHEN MATCHED compares

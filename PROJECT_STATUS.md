@@ -1,7 +1,197 @@
 # Project Status — Home Credit Risk Pipeline (Fabric)
 
 ## ▶ RESUME HERE
-**Where we are (2026-07-02, `gate-0.5-option-b-adr-008-009`):** Gate 2 infra provisioning is
+**Where we are (2026-07-06, `gate-0.5-option-b-adr-008-009`), latest — GATE 3 CLOSED (G6, G7
+both PASSED against real Fabric Warehouse compute, @data-architect APPROVE-CONDITIONAL).**
+J-022: @data-architect reviewed the 6 real Fabric Warehouse findings from J-021 (below) plus the
+browser-validated fix and returned **APPROVE-CONDITIONAL**
+(`migration/governance/GATE3_ARCHITECT_REVIEW_J021.md`) — no veto (no re-grain, no identity
+change, tracked-column set unchanged), 6 blocking conditions. All 6 applied this session: type
+fixes (`VARBINARY(32)`/`VARCHAR`/`DATETIME2(6)`/explicit `CONVERT(VARBINARY(32),
+HASHBYTES(...))`) applied uniformly across all 4 mart tables + the fallback proc;
+`usp_build_dim_applicant` repointed to `usp_scd2_fallback_dim_applicant`; the MERGE-based proc
+retired (deleted from `warehouse/`, archived at `migration/superseded/dim_applicant_scd2_merge.sql`
+— it cannot work on Fabric Warehouse at all, since `OUTPUT` is unsupported on any statement, not
+merely immature); same-PR doc amendments to `docs/DATA_MODEL.md`, `docs/ADR/ADR-008-*.md`,
+`warehouse/README.md`; the invalid C3 "compact form" corrected to predicate form in ADR-008 and
+`warehouse/PROOF_C3_C4_C5.md`. All 4 static contracts re-verified green (`identity_contract.py`
+updated to check only the surviving SCD2 proc; 2 stale doc-reference-contract violations fixed).
+**Real Gold build then run against the full real Silver dataset for the first time:**
+`usp_build_dim_applicant` → 307,511 rows, 307,511 distinct `applicant_id`, 307,511
+`is_current=1`, 0 one-current violations (**G7 confirmed at full scale**); all 3 fact procs →
+307,511 / 1,716,428 / 12,861,994 rows each exactly matching grain-key distinct-count and Silver
+source count (**G6 confirmed**). Condition 6 (prove the invariants on real data, not just
+synthetic) was satisfied via scratch-table copies of real applicant 100002's actual data — the
+sandbox's safety classifier correctly blocked a direct UPDATE against the real `dim_applicant`
+table mid-session (unauthorized write to shared production state), so the NULL-transition, C5
+rollback-path (deliberate forced failure — confirmed `ROLLBACK` genuinely restores pre-UPDATE
+state), C4 both-direction THROW, and C8 fact-grain THROW were all proven via scratch copies
+instead, with real production tables confirmed untouched throughout. `migration/governance/
+SIGN_OFF.md` Gate 3 table updated to ☑ CLOSED. Full detail: `MIGRATION_JOURNEY.md` J-022, cost in
+`COST_LOG.md` 2026-07-06 (session 6).
+**Next action:** Gate 4 (End-to-End Validation + Alerting) — Data Factory pipeline wiring to
+invoke the Gold build procs in dependency order (staging→intermediate→dim→facts→DQ), Data
+Activator + Teams alerting on a simulated failure (G9), Power BI Direct Lake report (G10), CU
+cost check (G11), boundary contract in CI (G12).
+
+**Previous checkpoint (J-021): Gate 3 kickoff, BLOCKED on 3 real Fabric Warehouse findings,
+Owner/@data-architect decision needed.**
+Fabric Trial Warehouse (`home_credit_warehouse`, id `83f15106-6972-4cbd-8984-1eebdb07d733`)
+created for the first time this session (ADR-010 D3 pre-step — none existed before). Solved the
+T-SQL execution-surface tooling gap (`fab` CLI has no query verb for `.Warehouse`) via
+`msodbcsql18` + `pyodbc` + AAD access-token auth (`SQL_COPT_SS_ACCESS_TOKEN`) — first real T-SQL
+ever run against Fabric Warehouse compute in this project, confirmed via `SELECT @@VERSION`.
+Confirmed cross-database query from Warehouse → Lakehouse SQL endpoint works with plain 3-part
+names (same logical server). Created a `silver`-schema shim (3 views aliasing the real
+Lakehouse `dbo.silver_*` tables) so `warehouse/staging|intermediate|mart` SQL resolves unmodified
+— wiring only, no logic change. Deployed clean: 3 staging/intermediate views, 4 DQ THROW procs, 4
+mart wrapper procs. **Blocked before any Gold table or SCD2 proc could run**, on 3 real findings
+against live Fabric Warehouse compute (none previously testable — no Warehouse existed until
+now): (1) `BINARY(32)` unsupported column type (error 24574) blocks all 4 mart `CREATE TABLE`
+statements (ADR-008 C6 surrogate key); (2) table variables unsupported (error 15871) blocks
+`usp_scd2_merge_dim_applicant`'s `DECLARE @touched TABLE`; (3) the ADR-008 C3 "NULL-safe" compact
+form `(a IS NULL) <> (b IS NULL)` is invalid T-SQL on any SQL Server-family engine (not just a
+Fabric gap) — blocks both SCD2 procs identically across all 4 tracked columns, and the
+`warehouse/PROOF_C3_C4_C5.md` claim that this is "logically identical" to dbt's generated SQL does
+not hold (dbt's version combines `IS NULL` as predicates joined with AND/OR/NOT, never as values
+compared with `<>`). **Stopped per this session's explicit governance instruction** — findings 2/3
+are SCD2-logic edits requiring @data-architect sign-off, not infra wiring. Gate 3 (G6, G7) stays
+☐ Pending. No `warehouse/*.sql` file was modified this session. Full detail: `MIGRATION_JOURNEY.md`
+J-021, cost in `COST_LOG.md` 2026-07-05 (session 5).
+**Next action:** Owner + @data-architect review findings 1-3 above and decide the fix for each
+(likely `VARBINARY(32)` for #1; a Fabric-supported substitute for the table-variable OUTPUT
+pattern for #2; a rewrite of the C3 expression to predicate-form `AND`/`OR`/`NOT` for #3) before
+any further Gold T-SQL is run.
+
+**Previous checkpoint (J-020): GATE 2 CLOSED (Owner GO).**
+J-020: all 5 Silver notebooks ran for real against the `SmallFixedPool` (guard re-verified no
+drift first) — **~24.4 minutes total real Spark execution, no throttle, no OOM**, including
+`nb_silver_balance_tables` (the 27M-row `bureau_balance` infra-risk case ADR-012 flagged as
+unproven — the single fixed Small node held up fine). Before spending CU, diffed all 5 deployed
+Fabric Notebook items against the current (uncommitted) `notebooks/nb_silver_*.py` local files via
+`getDefinition` — confirmed byte-identical, no redeploy needed. Built a throwaway
+`nb_silver_verify_gate2` Notebook item for real evidence (not assumed from job status): **G2 (PK
+uniqueness, all 7 tables) PASS, G3 (null-PK=0, all 7 tables) PASS, G4 (silver_application PII mask,
+DI-002/ADR-002 order) PASS** (55,374 sentinel/XNA rows correctly nulled before hashing, zero leaked
+as raw-sentinel hash, 5/5 sha256 samples match), **G5 (dedup match, bureau_balance + installments)
+PASS** (bureau_balance had zero raw dupes; installments genuinely collapsed 743,407 duplicate rows,
+13,605,401→12,861,994 — proves dedup logic actually works, not a no-op). Then re-ran
+`nb_silver_application` against byte-identical Bronze data and verified via a second throwaway
+notebook: **G8 (idempotency) PASS** — row count unchanged at 307,511, `no_dup_rows: true`. Both
+verify items + their `Files/verify_*` outputs deleted after reading results (workspace confirmed
+back to the original 6 items). Full detail: `MIGRATION_JOURNEY.md` J-020, cost in `COST_LOG.md`
+2026-07-05 (session 4).
+**Owner approved 2026-07-05 ("ok approved")** — recorded in `migration/governance/SIGN_OFF.md` as
+Owner GO on Gate 2 (G1-G5, G8), with the G4 @data-quality-steward standalone persona review waived
+Owner-direct, per the same waiver precedent already used for ADR-011/ADR-012. **Gate 2 outcome:
+☑ CLOSED.**
+**Next action:** Gold T-SQL dev on the Trial Warehouse (ADR-010 D3) — author/run the
+`warehouse/{staging,intermediate,mart,scd2,dq}` T-SQL objects directly against the real Fabric
+Trial Warehouse (not a local SQL engine — dialect drift would break zero-rewrite, per ADR-010).
+Read `docs/ADR/ADR-008-retire-dbt-warehouse-tsql.md` (C1-C8) and `warehouse/PROOF_C3_C4_C5.md`
+before touching any `warehouse/` file — @data-architect holds veto on grain/SCD2/model changes
+there. `dim_applicant` SCD2 MERGE proc is the highest-risk piece (ADR-008 C2/C3, NULL-safe
+change-detection). No Fabric Warehouse T-SQL proc has executed against real Fabric compute yet —
+this will be the first (Warehouse MERGE maturity currently unverified per
+`PROJECT_STATUS.md` "What has NOT happened").
+
+**Previous checkpoint (J-019): BRONZE IS REAL, Gate 2 G1 PASSED.** Owner-sourced fix from a Fabric Community thread (identical HTTP 430 symptom)
+confirmed against the real API: the workspace's default "Starter Pool" was `Medium`/autoscale
+1-10 nodes — oversized for the 64-CU FTL4 Trial capacity, causing every one of the prior 7
+attempts to be rejected at Livy-session admission before any Spark executor started. Created a
+custom **Small, autoscale-disabled (1 fixed node)** Spark pool (`POST
+workspaces/{id}/spark/pools` → `201`, `id: 18c24a87-e291-477c-b74c-5dc2837d6595`) and set it as
+the workspace default (`PATCH workspaces/{id}/spark/settings` → `200`, confirmed via follow-up
+`GET`). **Retry attempt 8** against `nb_bronze_ingest` (job
+`c91bcee4-f5d3-4824-810e-0ef2a091a276`) ran for real — `NotStarted` → `InProgress` →
+`Completed`, ~9.5 minutes of actual Spark execution, no throttle error at any point. **First
+success in 8 total attempts.** Verified Bronze materialization with real evidence (not assumed
+from job status): all 7 `bronze_*` Delta tables present in the Lakehouse (`fab ls Tables`), all
+required tag columns confirmed (`fab table schema` — `ingestion_ts`/`source_file`/`batch_id`/
+`env`), and **exact row-count parity to source CSVs on all 7 tables** (307,511 / 1,716,428 /
+27,299,925 / 1,670,214 / 13,605,401 / 10,001,358 / 3,840,312 — verified via a throwaway
+`nb_bronze_verify` Notebook item run through `fab job run`, output read via `fab cp`, then
+deleted along with its `Files/verify_counts` output to leave the workspace clean). **Gate 2
+condition G1 (row-count parity) is now PASSED against real Fabric compute** — the first real
+data in this project's Fabric workspace. Full detail: `MIGRATION_JOURNEY.md` J-019.
+**Next action:** run the 5 Silver notebooks against this same `SmallFixedPool` default (now
+proven to admit real Spark sessions on the Trial SKU) as a separate follow-up task — do not
+revert to the Starter Pool (this is now a binding constraint, `docs/ADR/ADR-012-fabric-trial-spark-pool-sizing.md`:
+verify `spark/settings` default == `SmallFixedPool` before submitting any job). After Silver: idempotency re-run (ADR-007 G8, re-run a Silver
+notebook and confirm no duplicate rows via the native Delta `MERGE INTO ... ON SK_ID_CURR`),
+then Gate 2 conditions G2-G5/G8 (PK uniqueness, PII-mask check, dedup match), then Gold T-SQL dev
+on the Trial Warehouse (ADR-010 D3). Real Spark CU billed is still unverified against a metering
+API in this sandbox (`admin/capacities/*`, `capacities/{id}/metrics` all `404` for this
+Contributor-role SP, unchanged since J-016) — wall-clock logged instead in `COST_LOG.md`.
+**J-018 (previous):** CU baseline
+corrected — Fabric Trial capacity is **64 CU / F64-equivalent / 8 Power BI v-cores**, cited to
+`learn.microsoft.com/en-us/fabric/enterprise/licenses#capacity` (the `FTL4` SKU string is not "4
+CU" — earlier sessions misread it); see `migration/benchmarks/INFRA_BASELINE.md`. Confirmed via
+the real API surface that a failed `RunNotebook` job cannot be "resumed" — no resume endpoint
+exists (`POST .../jobs/instances/{id}/resume` → `404`), `cancel` only works on active jobs
+(`400 JobAlreadyCompleted` on an already-failed job), and since all failures occur at
+Livy-session creation (pre-execution), continuing always means a brand-new `RunNotebook`
+submission against the same item ID, never a resume. **2 more real attempts made this session**
+(attempts 6-7 overall): attempt 6 after a **~3-day cross-session gap** still failed identically
+(`[TooManyRequestsForCapacity]` HTTP 430, `isRetriable:false`, 2.2s) — this is the material new
+finding, since a materially longer wait than anything tried in J-016/J-017 still didn't clear
+the throttle, weakening the "just wait longer" hypothesis. Attempt 7 (~20 min later) also failed
+identically. **7/7 total `RunNotebook` submissions against real Fabric compute have now failed**
+across 3 sessions — stopped at 7 (within the 8-new-attempt session cap) since the pattern is
+unambiguous across 3+ orders of magnitude of cooldown gap. Zero rows materialized against real
+Fabric compute; Gate 2 (G1-G5, G8) still entirely unverified. Full methodology (submission→poll
+API surface, failure-stage classification, what's NOT measurable in this sandbox — admin/capacity
+metrics endpoints all confirmed `404` for the Contributor-role SP, honest sample-size caveat)
+written up in `migration/benchmarks/INFRA_BASELINE.md` as a reusable pattern. Full detail:
+`MIGRATION_JOURNEY.md` J-018.
+
+**Next action (Owner call, not mine):** attempt 6's ~3-day-gap failure is stronger evidence than
+before that this is a structural Trial-tier ceiling, not a short-cooldown/burst-limit issue —
+sizing up off the FTL4 Trial SKU to a paid F-SKU is now the more evidence-backed option versus
+waiting longer. If Owner still wants to wait, an hours-scale (not day-scale) gap has not actually
+been tried yet in isolation (attempt 6 was a multi-day *cross-session* gap, not a clean
+controlled hours-scale single test) — that remains untested. Once Bronze actually runs: verify
+row counts against the 7 source CSVs (ADR-007 Tier 1-2), then run the 5 Silver notebooks +
+idempotency re-run (ADR-007 G8), then Gold T-SQL dev on the Trial Warehouse (ADR-010 D3).
+**Previous checkpoint (J-017):** Retried per
+Owner GO. Re-authed `fab`, confirmed capacity still `Active`/FTL4 (no resize) and all 6 Fabric
+Notebook items still present. Submitted 3 more `RunNotebook` jobs against `nb_bronze_ingest`
+with real cooldown gaps (~5 min, then ~8 min) — **all 3 failed identically**
+(`[TooManyRequestsForCapacity]` HTTP 430, `isRetriable: false`, failing at Livy-session creation
+in ~1-1.4s). Combined with J-016's 2 attempts, that's **5/5 total `RunNotebook` submissions
+against real Fabric compute failed with the exact same non-retriable throttle** — stopped at 5
+per the task's explicit cap, per Owner instruction not to loop indefinitely. **Zero rows
+materialized against real Fabric compute across both sessions** — Gate 2 (G1-G5, G8) is still
+entirely unverified against real Fabric; only the local Tier-0 proof from J-015 stands. Cost:
+effectively zero real Spark CU spent across all 5 attempts (all failed pre-execution); see
+`COST_LOG.md`. Full detail: `MIGRATION_JOURNEY.md` J-017.
+**Previous checkpoint (J-016):** First real Fabric compute attempt made (Owner GO). 6 real Fabric
+Notebook items created and verified in workspace `home-credit-risk-dev` (`nb_bronze_ingest` + 5
+`nb_silver_*`, item IDs in `MIGRATION_JOURNEY.md` J-016), wired to the real Lakehouse + real
+Landing batch (`Files/landing/dev/batch_20260702T203311Z/`). 2 `RunNotebook` Spark job
+submissions against `nb_bronze_ingest` both failed in <2s at Livy-session creation with the same
+error as above. Full detail: `MIGRATION_JOURNEY.md` J-016.
+**Earlier checkpoint (J-015):** Bronze notebook
+(`notebooks/nb_bronze_ingest.py`) and real Silver transform logic (all 5 `notebooks/nb_silver_*.py`,
+previously stubs) are written, per ADR-002 (PII mask order)/ADR-004 (native Delta MERGE
+idempotency)/`docs/PIPELINE_SPEC.md`. Proven locally (ADR-007 **Tier 0**, ADR-010 D1/D2): 9/9
+`pytest tests/local -q` tests green, using real PySpark 3.5 + `delta-spark`. All 4 static gates
+re-verified green after the change. Full detail: `MIGRATION_JOURNEY.md` J-015.
+**Next action:** this is an Owner call, not something to force from a session — either (a) wait
+for a materially longer cooldown (hours, not minutes — 4/5/8-minute gaps across 2 sessions have
+not been enough to clear the FTL4 Trial throttle) and retry `RunNotebook` against
+`nb_bronze_ingest` (item `d56abc42-a29e-4b1b-8554-737b5e5a7f3d`) again, or (b) size up off the
+Trial SKU to get a real Spark-VCore allocation. The item + job-submission plumbing is fully
+proven end-to-end across 5 real attempts; only actual Spark execution is blocked. Once Bronze
+actually runs: verify row counts against the 7 source CSVs and required columns (ADR-007 Tier
+1-2), then run the 5 Silver notebooks + idempotency re-run (ADR-007 G8), THEN Gold T-SQL dev on
+the Trial Warehouse (ADR-010 D3). Gate 2's sign-off conditions (G1-G5, G8 in
+`migration/governance/SIGN_OFF.md`) are still ☐ Pending — no real-Fabric evidence exists yet for
+any of them.
+
+---
+
+**Where we were (2026-07-02, before J-015):** Gate 2 infra provisioning is
 **live and API-verified** — see `MIGRATION_JOURNEY.md` J-011. Fabric Trial capacity started
 (60-day, East Asia), workspace `home-credit-risk-dev` (type Fabric Trial) created with the
 trial capacity assigned, Lakehouse `home_credit_lakehouse` created inside it (SQL Analytics

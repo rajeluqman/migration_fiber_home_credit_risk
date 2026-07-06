@@ -11,7 +11,10 @@ not a re-grain) — only where the SCD2 logic lives changes.
 Stdlib only. Exit 0 = contract holds. Exit 1 = hard violation.
 
 Rules:
-  ID1  Both warehouse/scd2/*.sql SCD2 procs must MERGE/match on `applicant_id` (never
+  ID1  The SCD2 proc (warehouse/scd2/dim_applicant_scd2_fallback.sql — sole mechanism as of
+       J-021; the MERGE-based proc is retired, archived at
+       migration/superseded/dim_applicant_scd2_merge.sql, because Fabric Warehouse does not
+       support the OUTPUT clause on any statement) must match on `applicant_id` (never
        `applicant_sk` — C6: the surrogate key is not the match key) and must compare exactly
        the 4 tracked columns from ADR-008 C2 (name_income_type, name_education_type,
        name_family_status, cnt_children) — a stray column swap or `SELECT *` is caught here.
@@ -33,7 +36,6 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 WAREHOUSE_ROOT = REPO / "warehouse"
-SCD2_MERGE = WAREHOUSE_ROOT / "scd2" / "dim_applicant_scd2_merge.sql"
 SCD2_FALLBACK = WAREHOUSE_ROOT / "scd2" / "dim_applicant_scd2_fallback.sql"
 MART_DIM = WAREHOUSE_ROOT / "mart" / "dim_applicant.sql"
 MART_DIR = WAREHOUSE_ROOT / "mart"
@@ -78,8 +80,7 @@ def _check_scd2_proc(path: Path, errors: list[str]) -> None:
 def check() -> list[str]:
     errors: list[str] = []
 
-    # ID1 — both the primary MERGE proc and the fallback proc must honour C2/C6
-    _check_scd2_proc(SCD2_MERGE, errors)
+    # ID1 — the sole SCD2 proc must honour C2/C6
     _check_scd2_proc(SCD2_FALLBACK, errors)
 
     # ID2

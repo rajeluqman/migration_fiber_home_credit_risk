@@ -8,7 +8,7 @@
 > **This is a pointer, not a cache.** It tells you which file to open — then READ THAT
 > FILE FRESH before you edit or assert about it (ANTI-SHORTCUT PROTOCOL, CLAUDE.md).
 
-**89 files mapped.**
+**95 files mapped.**
 
 ## Architecture Decision Records
 
@@ -26,6 +26,7 @@
 | `docs/ADR/ADR-009-capacity-lifecycle-automation.md` | ADR-009: Fabric Capacity Lifecycle Automation — Nightly Batch, Azure-Native Resume, In-Fabric Suspend + Watch… | — | — |
 | `docs/ADR/ADR-010-local-first-dev-and-fabric-trial.md` | ADR-010: Local-First Development Workflow + Fabric Trial Capacity as First Provisioning Target | — | — |
 | `docs/ADR/ADR-011-onelake-landing-zone.md` | ADR-011: Explicit OneLake Landing Zone Ahead of Bronze | — | — |
+| `docs/ADR/ADR-012-fabric-trial-spark-pool-sizing.md` | ADR-012: Fabric Trial Spark Pool Sizing — Small, Fixed-Node Custom Pool (mandatory workspace default) | — | — |
 
 ## Top-level docs
 
@@ -97,11 +98,13 @@
 
 | File | Purpose | Uses | Used by |
 |------|---------|------|---------|
-| `notebooks/nb_silver_application.py` | Fabric Spark Notebook stub — Silver transform for application_train. | — | — |
-| `notebooks/nb_silver_balance_tables.py` | Fabric Spark Notebook stub — Silver transform for the balance tables | — | — |
-| `notebooks/nb_silver_bureau.py` | Fabric Spark Notebook stub — Silver transform for bureau.csv. | — | — |
-| `notebooks/nb_silver_installments.py` | Fabric Spark Notebook stub — Silver transform for installments_payments.csv. | — | — |
-| `notebooks/nb_silver_previous_application.py` | Fabric Spark Notebook stub — Silver transform for previous_application.csv. | — | — |
+| `notebooks/nb_bronze_ingest.py` | Fabric Spark Notebook — Bronze materialization from Landing (ADR-011). | — | — |
+| `notebooks/nb_silver_application.py` | Fabric Spark Notebook — Silver transform for application_train. | — | — |
+| `notebooks/nb_silver_balance_tables.py` | Fabric Spark Notebook — Silver transform for the balance tables | — | — |
+| `notebooks/nb_silver_bureau.py` | Fabric Spark Notebook — Silver transform for bureau.csv. | — | — |
+| `notebooks/nb_silver_installments.py` | Fabric Spark Notebook — Silver transform for installments_payments.csv. | — | — |
+| `notebooks/nb_silver_previous_application.py` | Fabric Spark Notebook — Silver transform for previous_application.csv. | — | — |
+| `notebooks/silver_common.py` | Shared Silver-transform helpers, used by every notebooks/nb_silver_*.py. | — | — |
 
 ## Data Factory pipelines
 
@@ -140,6 +143,9 @@
 | `tests/doc_reference_contract.py` | Doc-reference contract — deterministic gate against documentation drift. | — | — |
 | `tests/identity_contract.py` | Identity contract — deterministic gate over the SCD2 applicant grain. | — | — |
 | `tests/local/README.md` | tests/local/ — Local-First Silver Dev/Test Harness (ADR-010, FB8) | — | — |
+| `tests/local/conftest.py` | Local Spark fixtures for the ADR-010 Tier 0 harness (ADR-010, FB8). | — | — |
+| `tests/local/test_bronze_to_silver_sample.py` | ADR-010 Tier 0 — end-to-end sample proof: real Kaggle CSV sample -> Bronze -> | — | — |
+| `tests/local/test_silver_application.py` | ADR-010 Tier 0 — local pre-parity proof for nb_silver_application.py. | — | — |
 | `tests/unit/test_framework_stubs.py` | Placeholder unit tests — this repo is a governance-framework port (ADR-005/006), no real | — | — |
 
 ## Governance hooks

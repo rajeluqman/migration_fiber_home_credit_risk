@@ -4,7 +4,7 @@ IF NOT EXISTS (SELECT 1 FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.
                WHERE s.name = 'dbo' AND t.name = 'fact_bureau_credit')
 BEGIN
     CREATE TABLE dbo.fact_bureau_credit (
-        fact_bureau_credit_sk BINARY(32) NOT NULL,  -- HASHBYTES surrogate key (C6), not the grain key
+        fact_bureau_credit_sk VARBINARY(32) NOT NULL,  -- HASHBYTES surrogate key (C6), not the grain key
         SK_ID_BUREAU            BIGINT     NOT NULL,  -- grain key
         SK_ID_CURR                BIGINT     NOT NULL
     );
@@ -17,7 +17,7 @@ BEGIN
     TRUNCATE TABLE dbo.fact_bureau_credit;
     INSERT INTO dbo.fact_bureau_credit (fact_bureau_credit_sk, SK_ID_BUREAU, SK_ID_CURR)
     SELECT
-        HASHBYTES('SHA2_256', CONVERT(NVARCHAR(20), ISNULL(SK_ID_BUREAU, -1))),
+        CONVERT(VARBINARY(32), HASHBYTES('SHA2_256', CONVERT(VARCHAR(20), ISNULL(SK_ID_BUREAU, -1)))),
         SK_ID_BUREAU,
         SK_ID_CURR
     FROM dbo.int_bureau_with_balance;

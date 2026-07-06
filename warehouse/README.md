@@ -8,7 +8,7 @@ third-party transformation framework; Data Factory invokes these stored procs di
 | `staging/` | `models/staging/*.sql` (views) | `CREATE OR ALTER VIEW` |
 | `intermediate/` | `models/intermediate/*.sql` (views) | `CREATE OR ALTER VIEW` |
 | `mart/` | `models/mart/*.sql` (tables) | table DDL + `usp_build_*` procs |
-| `scd2/` | `snapshots/snap_applicant.sql` (`dbt snapshot`) | `usp_scd2_merge_dim_applicant` (primary, MERGE) + `usp_scd2_fallback_dim_applicant` (2-step atomic fallback, C5) |
+| `scd2/` | `snapshots/snap_applicant.sql` (`dbt snapshot`) | `usp_scd2_fallback_dim_applicant` (2-step, C5) — sole mechanism as of J-021; the original MERGE-based proc is retired (Fabric Warehouse doesn't support `OUTPUT`), archived at `migration/superseded/dim_applicant_scd2_merge.sql` |
 | `dq/` | dbt `assert_*` tests | `THROW`-based assertion procs, wired as Data Factory FAIL-branch gates |
 
 Binding conditions C1–C8 and the grain-proof requirement live in

@@ -100,26 +100,40 @@ dbt-fabric mart model is run. PII mask check (Tier 4) must pass before any Gold 
 
 | Condition (ADR-007 reference) | Evidence | Owner | Status |
 |---|---|---|---|
-| G1: All 7 Silver tables row-count match baseline | `parity_check.py` output | @senior-data-engineer | ☐ Pending |
-| G2: PK uniqueness on all keyed Silver tables | `parity_check.py` output | @senior-data-engineer | ☐ Pending |
-| G3: Null-PK count = 0 on all keyed Silver tables | `parity_check.py` output | @senior-data-engineer | ☐ Pending |
-| G4: silver_application PII mask verified | Notebook assertion log | @data-quality-steward | ☐ Pending |
-| G5: Dedup counts match for bureau_balance + installments | `parity_check.py` output | @senior-data-engineer | ☐ Pending |
-| G8: Idempotency re-run test passes | `parity_check.py --idempotency` output | @senior-data-engineer | ☐ Pending |
+| G1: All 7 Silver tables row-count match baseline | Bronze row-count parity vs. source CSVs, `MIGRATION_JOURNEY.md` J-019 | @senior-data-engineer | ☑ Signed 2026-07-05 |
+| G2: PK uniqueness on all keyed Silver tables | Throwaway `nb_silver_verify_gate2` real output, `MIGRATION_JOURNEY.md` J-020 — 7/7 tables `row_count == distinct_key_count` | @senior-data-engineer | ☑ Signed 2026-07-05 |
+| G3: Null-PK count = 0 on all keyed Silver tables | Same J-020 verify run — `null_key_count: 0` on all 7 tables | @senior-data-engineer | ☑ Signed 2026-07-05 |
+| G4: silver_application PII mask verified | Same J-020 verify run — sentinel/XNA→NULL counts match bronze exactly, zero sentinel-hash leaks, 5/5 sha256 sample checks match | @data-quality-steward | ☑ Signed 2026-07-05 — Owner-direct approval (waives standalone @data-quality-steward persona review this gate, per the ADR-011/ADR-012 Owner-waiver precedent already used twice in this project) |
+| G5: Dedup counts match for bureau_balance + installments | Same J-020 verify run — bureau_balance 27,299,925=27,299,925 (no raw dupes), installments 13,605,401→12,861,994 (743,407 real dupes collapsed) | @senior-data-engineer | ☑ Signed 2026-07-05 |
+| G8: Idempotency re-run test passes | J-020 — `nb_silver_application` re-run against byte-identical Bronze, row/distinct-key count unchanged at 307,511, `no_dup_rows: true` | @senior-data-engineer | ☑ Signed 2026-07-05 |
+| Owner | Final go/no-go on Gate 2 evidence (G1-G5, G8) | Owner | ☑ Signed 2026-07-05 — GO ("ok approved") |
 
-**Gate 2 outcome:** ☐ OPEN
+**Gate 2 outcome:** ☑ CLOSED 2026-07-05 — G1 (J-019) + G2/G3/G4/G5/G8 (J-020) all PASSED against
+real Fabric compute, Owner GO recorded. Gold/mart work (ADR-010 D3) is now authorised to begin.
 
 ---
 
 ## Gate 3 — Fabric Gold/Mart Parity (required before any cutover planning)
-dbt-fabric run complete, mart tables + SCD2 snapshot verified against the Kimball design.
+Fabric Warehouse T-SQL Gold build run for real, mart tables + SCD2 mechanism verified against the
+Kimball design (dbt retired per ADR-008 — "dbt-fabric run" below reads as "Fabric Warehouse T-SQL
+build run").
 
 | Condition (ADR-007 reference) | Evidence | Owner | Status |
 |---|---|---|---|
-| G6: Gold mart tables in Fabric Warehouse, same grain as Snowflake equivalents | dbt run output + row counts | @data-architect | ☐ Pending |
-| G7: SCD2 snapshot — exactly 1 is_current=TRUE row per applicant | dbt test output (equivalent of `assert_scd2_one_current_per_applicant.sql`) | @data-architect | ☐ Pending |
+| G6: Gold mart tables in Fabric Warehouse, same grain as Snowflake equivalents | J-021/J-022 (`MIGRATION_JOURNEY.md`): `usp_build_fact_loan_application`/`fact_bureau_credit`/`fact_installment_payment` run against real Warehouse + full Silver data — 307,511/1,716,428/12,861,994 rows, each exactly matching its grain-key distinct-count and the Silver source row count | @data-architect | ☑ Signed 2026-07-06 |
+| G7: SCD2 snapshot — exactly 1 is_current=TRUE row per applicant | J-022: `usp_build_dim_applicant` run against real Warehouse + full Silver data — 307,511 rows = 307,511 distinct `applicant_id` = 307,511 `is_current=1`, 0 violations of the `usp_assert_dim_applicant_one_current` invariant; NULL-transition (real applicant 100002), C4 both-direction THROW, C8 fact-grain THROW, and C5 rollback-path (deliberate forced failure) all independently proven on real-data scratch copies | @data-architect | ☑ Signed 2026-07-06 |
 
-**Gate 3 outcome:** ☐ OPEN
+Both conditions were reached via an interim finding-and-fix cycle (J-021): the first real run
+against the Fabric Trial Warehouse surfaced 6 real Fabric Warehouse dialect/logic limitations
+(`BINARY(32)`/`NVARCHAR`/`DATETIME2(7)` unsupported, table variables unsupported, `OUTPUT`
+unsupported on any statement, and the ADR-008-documented C3 "compact form" being invalid T-SQL on
+any SQL Server-family engine — not merely a Fabric gap). @data-architect reviewed the fix
+(`migration/governance/GATE3_ARCHITECT_REVIEW_J021.md`) and returned **APPROVE-CONDITIONAL** — no
+veto (no re-grain, no identity change), 6 blocking conditions, all applied same session. See
+`MIGRATION_JOURNEY.md` J-021/J-022 for full detail.
+
+**Gate 3 outcome:** ☑ CLOSED 2026-07-06 — G6 and G7 both PASSED against real Fabric Warehouse
+compute.
 
 ---
 

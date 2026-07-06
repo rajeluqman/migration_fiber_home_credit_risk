@@ -38,7 +38,7 @@ stg_application.sql                    → view, clean + cast (T-SQL dialect —
 int_applicant_attributes.sql           → view, feeds the dim_applicant SCD2 build
 int_bureau_with_balance.sql            → view, join bureau + bureau_balance
 dim_applicant.sql                      → table DDL + `usp_build_dim_applicant` (SCD2, from
-                                          `warehouse/scd2/dim_applicant_scd2_merge.sql`) — grain: SK_ID_CURR
+                                          `warehouse/scd2/dim_applicant_scd2_fallback.sql`) — grain: SK_ID_CURR
 fact_loan_application.sql              → table DDL + `usp_build_fact_loan_application` — grain: SK_ID_CURR
 fact_bureau_credit.sql                 → table DDL + `usp_build_fact_bureau_credit` — grain: SK_ID_BUREAU
 fact_installment_payment.sql           → table DDL + `usp_build_fact_installment_payment` — grain: SK_ID_PREV + NUM_INSTALMENT_NUMBER

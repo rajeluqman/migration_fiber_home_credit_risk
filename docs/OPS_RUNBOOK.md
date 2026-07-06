@@ -28,7 +28,7 @@ Rerun : Data Factory → clear failed activity → rerun pipeline
 Check : Fabric Warehouse → Query history — which `usp_assert_*` proc THREW
 Fix 1 : FK violation → check Silver quarantine
 Fix 2 : SCD is_current > 1 or 0 per applicant (ADR-008 C4) → check
-        `warehouse/scd2/dim_applicant_scd2_merge.sql` (or `_fallback.sql`) /
+        `warehouse/scd2/dim_applicant_scd2_fallback.sql` /
         `warehouse/mart/dim_applicant.sql`
 
 ## Provisioning a Fabric Workspace (not yet done — Gate 0 unsigned)

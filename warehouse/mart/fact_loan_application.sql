@@ -4,7 +4,7 @@ IF NOT EXISTS (SELECT 1 FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.
                WHERE s.name = 'dbo' AND t.name = 'fact_loan_application')
 BEGIN
     CREATE TABLE dbo.fact_loan_application (
-        fact_loan_application_sk BINARY(32) NOT NULL,  -- HASHBYTES surrogate key (C6), not the grain key
+        fact_loan_application_sk VARBINARY(32) NOT NULL,  -- HASHBYTES surrogate key (C6), not the grain key
         SK_ID_CURR                  BIGINT     NOT NULL,  -- grain key
         applicant_id                 BIGINT     NOT NULL
     );
@@ -17,7 +17,7 @@ BEGIN
     TRUNCATE TABLE dbo.fact_loan_application;
     INSERT INTO dbo.fact_loan_application (fact_loan_application_sk, SK_ID_CURR, applicant_id)
     SELECT
-        HASHBYTES('SHA2_256', CONVERT(NVARCHAR(20), ISNULL(SK_ID_CURR, -1))),
+        CONVERT(VARBINARY(32), HASHBYTES('SHA2_256', CONVERT(VARCHAR(20), ISNULL(SK_ID_CURR, -1)))),
         SK_ID_CURR,
         applicant_id
     FROM dbo.stg_application;

@@ -1,12 +1,14 @@
 # Proof: C3 (NULL-safe change detection) / C4 (one-current THROW gate) / C5 (atomic fallback)
 
 > Required by @data-architect's contingent sign-off on `docs/ADR/ADR-008-retire-dbt-warehouse-tsql.md`
-> (`MIGRATION_JOURNEY.md` J-008/J-009). Static, worked-example proof — no live Fabric Warehouse
-> exists yet (Gate 1 unsigned), so this cannot be a query-execution screenshot. It is a
-> line-by-line logical proof that `warehouse/scd2/dim_applicant_scd2_merge.sql` /
-> `dim_applicant_scd2_fallback.sql` reproduce dbt's own `check`-strategy behaviour on a
-> NULL-transition row, and that the C4/C5 failure modes they guard against are real. **This
-> proof itself is (unverified) against real Fabric Warehouse execution — Gate 1.**
+> (`MIGRATION_JOURNEY.md` J-008/J-009). Originally a static, worked-example proof written before
+> any live Fabric Warehouse existed. **Updated 2026-07-06 (J-021):** a real Fabric Trial Warehouse
+> now exists and this proof's core claim — the compact NULL-safe form being "logically identical"
+> to dbt's generated SQL — turned out to be wrong (the compact form doesn't compile on any SQL
+> Server-family engine). See `migration/governance/GATE3_ARCHITECT_REVIEW_J021.md` for the full
+> review. This file now documents both the corrected logic and what has actually been run against
+> real Fabric Warehouse compute (the `dim_applicant_scd2_merge.sql` proc referenced below is
+> retired — see `migration/superseded/`).
 
 ## C3 — NULL-safe change detection, side-by-side vs dbt
 
@@ -59,28 +61,46 @@ expands each tracked column to:
     )
 )
 ```
-which is logically identical to the compact form ADR-008 C3 names:
+**Correction 2026-07-06 (J-021, `migration/governance/GATE3_ARCHITECT_REVIEW_J021.md`):** this
+proof originally claimed the compact form below was "logically identical" to dbt's generated SQL
+above:
 ```
 (a <> b) OR ((a IS NULL) <> (b IS NULL))
 ```
-Both forms evaluate this row's `cnt_children` comparison to **TRUE**: `a IS NULL` is `TRUE`,
-`b IS NULL` is `FALSE`, so `(a IS NULL) <> (b IS NULL)` is `TRUE` — the OR short-circuits to
-`TRUE` regardless of what `a <> b` evaluates to. The row is correctly flagged as changed.
-
-### What `warehouse/scd2/dim_applicant_scd2_merge.sql` does
-```sql
-WHEN MATCHED AND (
-     (src.name_income_type    <> tgt.name_income_type    OR ((src.name_income_type    IS NULL) <> (tgt.name_income_type    IS NULL)))
-  OR (src.name_education_type <> tgt.name_education_type OR ((src.name_education_type IS NULL) <> (tgt.name_education_type IS NULL)))
-  OR (src.name_family_status  <> tgt.name_family_status  OR ((src.name_family_status  IS NULL) <> (tgt.name_family_status  IS NULL)))
-  OR (src.cnt_children        <> tgt.cnt_children        OR ((src.cnt_children        IS NULL) <> (tgt.cnt_children        IS NULL)))
-)
+That claim was wrong — this is **invalid T-SQL on any SQL Server-family engine**, not a
+valid-but-terse restatement. SQL Server has no boolean type for an `IS NULL` predicate to
+evaluate *to a value* that `<>` can compare against another `IS NULL` predicate; confirmed live
+against real Fabric Warehouse compute (`SELECT 1 WHERE (('a'<>'b' OR (('a' IS NULL)<>('b' IS
+NULL))))` fails with "Incorrect syntax near '<'."). Neither SCD2 proc that used this form
+compiled. The actual fix is the **pure-predicate form**, which dbt's own generated SQL quoted
+above already uses (`is null ... and not (... is null)` joined by `and`/`or`, never `<>` on
+`IS NULL` results):
 ```
-Same per-column expansion, same 4 tracked columns (ADR-008 C2), applied identically in the
-2-step fallback (`dim_applicant_scd2_fallback.sql`). For `applicant_id = 100001`: the
-`cnt_children` clause evaluates `TRUE` exactly as it does in dbt's generated SQL above — the row
-is expired (`end_date = SYSUTCDATETIME()`, `is_current = 0`) and a new current version is
-inserted with `cnt_children = 2`. **Behaviour matches dbt on this NULL-transition row.**
+(a <> b) OR (a IS NULL AND b IS NOT NULL) OR (a IS NOT NULL AND b IS NULL)
+```
+This is logically total over all 4 {NULL, non-NULL}² transition cells (re-derived and verified
+live in J-021): NULL→value and value→NULL both correctly evaluate TRUE (changed); value→same-value
+and NULL→NULL both correctly evaluate FALSE (unchanged, including the two-unknowns case dbt itself
+treats as no-change).
+
+### What `warehouse/scd2/dim_applicant_scd2_fallback.sql` does (sole SCD2 mechanism as of J-021 —
+### the MERGE-based proc is retired, archived at `migration/superseded/dim_applicant_scd2_merge.sql`,
+### because Fabric Warehouse does not support the `OUTPUT` clause on any statement)
+```sql
+WHERE tgt.is_current = 1
+  AND (
+         (src.name_income_type    <> tgt.name_income_type    OR (src.name_income_type    IS NULL AND tgt.name_income_type    IS NOT NULL) OR (src.name_income_type    IS NOT NULL AND tgt.name_income_type    IS NULL))
+      OR (src.name_education_type <> tgt.name_education_type OR (src.name_education_type IS NULL AND tgt.name_education_type IS NOT NULL) OR (src.name_education_type IS NOT NULL AND tgt.name_education_type IS NULL))
+      OR (src.name_family_status  <> tgt.name_family_status  OR (src.name_family_status  IS NULL AND tgt.name_family_status  IS NOT NULL) OR (src.name_family_status  IS NOT NULL AND tgt.name_family_status  IS NULL))
+      OR (src.cnt_children        <> tgt.cnt_children        OR (src.cnt_children        IS NULL AND tgt.cnt_children        IS NOT NULL) OR (src.cnt_children        IS NOT NULL AND tgt.cnt_children        IS NULL))
+     )
+```
+Same per-column predicate-form expansion, same 4 tracked columns (ADR-008 C2). For
+`applicant_id = 100001`: the `cnt_children` clause evaluates `TRUE` exactly as it does in dbt's
+generated SQL above — the row is expired (`end_date = SYSUTCDATETIME()`, `is_current = 0`) and a
+new current version is inserted with `cnt_children = 2`. **Behaviour matches dbt on this
+NULL-transition row — proven against real Fabric Warehouse compute in J-021 (scratch-table
+end-to-end run), not only on paper.**
 
 ## C4 — one-current THROW gate, both directions
 
@@ -103,24 +123,33 @@ every downstream KPI) — that failure mode is invisible without an explicit zer
 If Step 1 (`UPDATE ... SET is_current = 0`) commits and the process then dies before Step 2
 (`INSERT ... new version`) runs, the applicant has **zero current rows** — the exact case 2
 above. Wrapping both statements in one `BEGIN TRANSACTION ... COMMIT TRANSACTION` (with
-`ROLLBACK` in the `CATCH` block) in both `dim_applicant_scd2_merge.sql` and
-`dim_applicant_scd2_fallback.sql` means a mid-transaction failure rolls back the UPDATE too — the
-applicant keeps their previous current row (last-known-good state) rather than being left with
-none. `usp_assert_dim_applicant_one_current` (C4) is the mandatory backstop for the case where
-Fabric Warehouse transaction semantics themselves prove not to be atomic in practice
-(unverified — Gate 1): if that ever happens, the zero-current check fails loudly instead of
-silently dropping applicants from downstream joins.
+`ROLLBACK` in the `CATCH` block) in `dim_applicant_scd2_fallback.sql` means a mid-transaction
+failure rolls back the UPDATE too — the applicant keeps their previous current row
+(last-known-good state) rather than being left with none. `usp_assert_dim_applicant_one_current`
+(C4) is the mandatory backstop for the case where Fabric Warehouse transaction semantics
+themselves prove not to be atomic in practice — **still (unverified) as of J-021**: the
+happy-path output has been proven against real Fabric Warehouse compute (scratch-table
+end-to-end run), but a mid-transaction forced-failure has not yet been tested to confirm the
+`ROLLBACK` genuinely restores the pre-UPDATE state on this engine. See
+`migration/governance/GATE3_ARCHITECT_REVIEW_J021.md` Condition 6 — G7 will not be signed until
+either this rollback path is proven or reliance on the C4 backstop is explicitly documented as
+the accepted mitigation.
 
 ## Summary
 
 | Condition | Mechanism | Where |
 |---|---|---|
-| C2 | Exactly 4 tracked columns, never `SELECT *` | both SCD2 procs, `WHEN MATCHED` / `UPDATE ... WHERE` clauses |
-| C3 | Per-column `(a<>b) OR ((a IS NULL)<>(b IS NULL))`, matches dbt's own generated SQL | both SCD2 procs |
-| C4 | THROW on >1 current AND on 0 current | `warehouse/dq/assert_dim_applicant_one_current.sql`, called at the end of both SCD2 procs |
-| C5 | Single transaction wraps expire+insert; C4 is the backstop if atomicity itself is ever violated | both SCD2 procs |
+| C2 | Exactly 4 tracked columns, never `SELECT *` | `dim_applicant_scd2_fallback.sql`, sole SCD2 proc as of J-021 |
+| C3 | Per-column `(a<>b) OR (a IS NULL AND b IS NOT NULL) OR (a IS NOT NULL AND b IS NULL)`, matches dbt's own generated SQL — pure-predicate form, corrected 2026-07-06 (J-021) | `dim_applicant_scd2_fallback.sql` |
+| C4 | THROW on >1 current AND on 0 current | `warehouse/dq/assert_dim_applicant_one_current.sql`, called at the end of the SCD2 proc |
+| C5 | Single transaction wraps expire+insert; C4 is the backstop if atomicity itself is ever violated | `dim_applicant_scd2_fallback.sql` |
 
-**(unverified until Gate 1):** all of the above is proven by static SQL-logic inspection, not a
-live Fabric Warehouse run. Confirm by executing both procs against a seeded `dim_applicant` +
-`int_applicant_attributes` fixture with the exact NULL-transition row above once a real
-workspace exists.
+**Verified 2026-07-06 (J-021) against real Fabric Warehouse compute** (happy-path only — see the
+C5 rollback-path caveat above): C2/C3 confirmed via a scratch-table end-to-end run reproducing
+this exact `applicant_id = 100001` NULL→2 transition, plus an unrelated unchanged applicant and a
+brand-new applicant, in the same run — all three came out correct, and the one-current check
+returned zero violations. The original MERGE-based proc never compiled (table variables and the
+`OUTPUT` clause are both unsupported on Fabric Warehouse) and is retired
+(`migration/superseded/dim_applicant_scd2_merge.sql`). Still **(unverified)**: the C5
+mid-transaction rollback path on real data (Condition 6 above), and this same logic against the
+full real Silver dataset rather than a scratch fixture.

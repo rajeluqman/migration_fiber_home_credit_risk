@@ -64,6 +64,13 @@ that runs the Kaggle download script.**
   `nb_silver_balance_tables`, `nb_silver_installments`, `nb_silver_previous_application`.
 - Notebooks are scheduled via Data Factory pipeline activities (see §1), replacing the
   3 chained Airflow DAGs.
+- **Refined by ADR-012 (Spark pool sizing):** on the FTL4 **Trial** capacity these notebooks MUST
+  run against a custom **Small, autoscale-disabled, single fixed-node** pool (`SmallFixedPool`),
+  set as the workspace default — the auto-provisioned Medium/autoscale-1-10 "Starter Pool" is
+  oversized for the Trial admission ceiling and made every job fail at Livy-session creation with
+  HTTP 430 `TooManyRequestsForCapacity` (`docs/ADR/ADR-012-fabric-trial-spark-pool-sizing.md`,
+  `MIGRATION_JOURNEY.md` J-019). This pins the pool sizing §3 left unspecified; it does not change
+  the engine, notebook count, or MERGE approach above.
 
 ### 4. Gold/mart transform (replaces dbt Core + Snowflake)
 > ⚠️ **PROPOSED SUPERSESSION (2026-07-01):** the Owner ruled "Fabric-only" absolute, exercising
