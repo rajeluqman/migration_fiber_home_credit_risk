@@ -120,7 +120,16 @@ that runs the Kaggle download script.**
   hard gate. It complements Layer 1 rather than replacing it.
 
 ### 6. Pipeline alerting (replaces Slack webhook / `SlackWebhookOperator`)
-**Decision: Data Activator + Teams — fully M365/Fabric native.**
+> **⚠️ SUPERSEDED for the pass/fail-alert channel by [ADR-013](ADR-013-slack-alerting-override.md)
+> (2026-07-06).** The Teams decision below could not be realised: Teams proved genuinely unusable
+> in the real MSA-rooted Fabric trial tenant (Power Platform BAP blocks first-party OAuth; a
+> working path also needs a paid M365 licence — `MIGRATION_JOURNEY.md` J-023). The Owner overrode
+> a @scope-guardian VETO (J-024) and re-admitted a **Slack Incoming Webhook** for pipeline-failure
+> alerting, lifting the FB4 Slack ban. The original Teams rationale is kept below for the migration
+> record, but the **current** alerting channel is Slack. The Data-Activator metric-threshold layer
+> is unaffected in principle (still Fabric-native) but is not yet built.
+
+**Decision (superseded — see banner): Data Activator + Teams — fully M365/Fabric native.**
 
 - **Pass/fail pipeline alerts:** Data Factory pipeline failure branch → Teams channel
   via a built-in Office 365 Outlook/Teams connector activity (native, no webhook token).
@@ -165,7 +174,7 @@ that runs the Kaggle download script.**
 | AWS Glue PySpark (5 jobs) | Fabric Spark Notebook (5 notebooks) | Yes |
 | Snowflake Gold / dbt-snowflake | Fabric Warehouse + dbt-fabric adapter | **Exception (dbt)** |
 | Great Expectations (GX) | Inline notebook assertions + Purview DQ | Yes |
-| Slack webhook | Data Activator + Teams connector | Yes |
+| Slack webhook | ~~Data Activator + Teams connector~~ → **Slack Incoming Webhook** (ADR-013 — Teams unusable in this tenant) + Data Activator | Yes |
 | Databricks Serverless SQL | SQL Analytics Endpoint (auto) | Yes |
 | Power BI (import mode) | Power BI Direct Lake | Yes |
 

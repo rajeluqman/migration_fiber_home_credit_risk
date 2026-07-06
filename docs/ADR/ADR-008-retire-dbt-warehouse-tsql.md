@@ -91,8 +91,9 @@ the one-current invariant are preserved exactly (see C2/C4).
 
 ## Scope conditions (from @scope-guardian)
 - Removing dbt is scope **reduction**, not creep (ADR-006 §4 pre-authorised it). No new data-plane
-  connector, no new vendor SDK, no AWS/Snowflake/Databricks/Airflow/Slack/Great-Expectations
-  reintroduced.
+  connector, no new vendor SDK, no AWS/Snowflake/Databricks/Airflow/Great-Expectations
+  reintroduced. (Slack was later re-admitted for pipeline-failure alerting only — ADR-013,
+  2026-07-06 — after Teams proved unusable; unrelated to this dbt-retirement ADR.)
 - `dbt_fabric/` is retired **fully** (deleted or archived under `migration/` labelled
   "superseded"), not left half-alive next to `warehouse/`.
 - **FB5 rewrite** (both `tests/boundary_contract.py` and

@@ -8,19 +8,23 @@ Enforced rules:
   FB1  no boto3/botocore import (AWS SDK — stack is Fabric/Azure, not AWS)
   FB2  no snowflake-connector-python / snowflake.connector import (Gold is Fabric Warehouse)
   FB3  no apache-airflow / airflow import (orchestration is Data Factory, not Airflow)
-  FB4  no slack_sdk / slackclient import (alerting is Teams/Data Activator, not Slack)
+  FB4  [LIFTED 2026-07-06 — ADR-013] previously banned slack_sdk/slackclient (alerting was
+       Teams). Teams proved unusable in this MSA-rooted Fabric trial tenant (Power Platform BAP
+       blocks first-party OAuth; requires paid M365 licence — MIGRATION_JOURNEY.md J-023). Owner
+       overrode a @scope-guardian VETO (J-024) and re-admitted Slack as the pipeline-failure
+       alerting channel (a plain Incoming Webhook POST — no SDK imported). FB1-FB3 unaffected.
   FB5  dbt-absence — no profiles.yml/dbt_project.yml anywhere, no `import dbt` (ADR-008: dbt
        retired entirely, Gold is Fabric Warehouse T-SQL stored procedures under warehouse/)
   FB6  no pyspark standalone import outside notebooks/ (Spark only inside Fabric notebooks)
   FB8  local-dev PySpark carve-out (ADR-010) — standalone PySpark is additionally permitted
        under tests/local/ (local Silver dev/test harness), provided every file there cites
        ADR-010. These are dev/test-only, never deployed to Fabric, never referenced by a
-       Data Factory pipeline. FB1-FB4 SDK bans still apply inside tests/local/. PySpark
+       Data Factory pipeline. FB1-FB3 SDK bans still apply inside tests/local/. PySpark
        anywhere else, or a tests/local/ file missing the ADR-010 citation, is a hard violation.
   FB7  capacity-lifecycle control-plane carve-out (ADR-009) — the only permitted component
        outside the Fabric workspace boundary is a single external directory (automation/ or
        infra/) that: (a) every file cites ADR-009, (b) only one such directory exists (not
-       both), (c) the same FB1-FB4 SDK bans still apply inside it. The literal "3 actions on
+       both), (c) the same FB1-FB3 SDK bans still apply inside it. The literal "3 actions on
        1 named resource" hard-cap is a design constraint enforced by @scope-guardian review at
        Gate 1 build time — not statically countable from file contents alone, so this contract
        does not claim to enforce it by itself.
@@ -57,8 +61,8 @@ ALWAYS_DENY: dict[str, str] = {
     "botocore": "FB1 — stack is Fabric/Azure, AWS SDK not permitted",
     "snowflake": "FB2 — Gold compute is Fabric Warehouse (T-SQL), Snowflake connector not permitted",
     "airflow": "FB3 — orchestration is Data Factory pipelines, Airflow not permitted",
-    "slack_sdk": "FB4 — alerting is Teams/Data Activator, Slack SDK not permitted",
-    "slackclient": "FB4 — alerting is Teams/Data Activator, Slack SDK not permitted",
+    # FB4 Slack ban LIFTED 2026-07-06 (ADR-013) — Slack re-admitted as the alerting channel after
+    # Teams proved unusable in this tenant; alert is a plain webhook POST, no slack_sdk imported.
     "dbt": "FB5 — dbt is retired entirely (ADR-008); Gold is Fabric Warehouse T-SQL under warehouse/",
 }
 
@@ -145,7 +149,7 @@ def _scan_fb8(errors: list[str]) -> set[Path]:
         handled.add(path.resolve())
         text = path.read_text(errors="ignore")
         if "ADR-010" in text:
-            # carve-out granted: FB1-FB4 SDK bans still apply, pyspark permitted
+            # carve-out granted: FB1-FB3 SDK bans still apply, pyspark permitted
             _scan_python(path, errors, ALWAYS_DENY)
         else:
             rel = path.relative_to(REPO)
@@ -207,7 +211,7 @@ def main() -> int:
         return 1
     print(
         "✅ fabric boundary contract OK "
-        "(no AWS SDK, no Snowflake connector, no Airflow, no Slack SDK, dbt absent, "
+        "(no AWS SDK, no Snowflake connector, no Airflow, FB4 Slack-ban lifted per ADR-013, dbt absent, "
         "FB7 control-plane carve-out clean)"
     )
     return 0

@@ -136,7 +136,7 @@ stack is deprovisioned:
 | G6 | Gold mart tables exist in Fabric Warehouse with same grain | dbt run output, row counts | @data-architect |
 | G7 | SCD2 snapshot produces exactly 1 is_current=TRUE row per applicant | `assert_scd2_one_current_per_applicant.sql` equivalent test passing | @data-architect |
 | G8 | Idempotency test passes (re-run produces identical output) | parity_check.py --idempotency output | @senior-data-engineer |
-| G9 | Data Activator + Teams alert fires on a simulated pipeline failure | Screenshot/log of Teams message received | @data-platform-engineer |
+| G9 | Slack alert fires on a simulated pipeline failure (ADR-013 — was Teams; Teams unusable in this tenant) | Screenshot/log of Slack message received | @data-platform-engineer |
 | G10 | Power BI Direct Lake report loads without errors | Report screenshot, semantic model refresh log | Owner |
 | G11 | @finops-agent confirms Fabric CU cost estimate acceptable vs. `COST_BASELINE.md` | Written cost comparison | @finops-agent |
 | G12 | `governance/boundary_contract_fabric.py` exits 0 in the new repo | CI output | @scope-guardian |

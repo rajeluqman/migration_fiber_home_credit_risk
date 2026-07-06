@@ -32,13 +32,13 @@ paused ~22.5 hours/day:
    ADR amendment.)
 2. **Batch — inside Fabric.** Data Factory pipeline: Bronze → Silver → Gold → DQ THROW gates.
 3. **Suspend — inside Fabric.** Final Data Factory activity calls `/suspend` (capacity is still
-   live at that moment) + posts a Teams alert "batch done, compute OFF".
+   live at that moment) + posts a Slack alert (ADR-013 — was Teams) "batch done, compute OFF".
 4. **Watchdog — inside Fabric.** A Fabric-scheduled pipeline (every 15–30 min) force-suspends the
-   capacity if it is found Running outside the 00:00–01:30 window + Teams alert.
+   capacity if it is found Running outside the 00:00–01:30 window + Slack alert (ADR-013).
 5. **Daily kill-switch — outside Fabric.** An unconditional daily force-suspend (hosted on the same
    external Azure component as the resume) as a second, independent layer in case the in-Fabric
    watchdog cannot fire (see @finops-agent failure mode below).
-6. **Budget — notify-only.** Azure Cost Management budget alerts (50/80/100% → Teams). This is
+6. **Budget — notify-only.** Azure Cost Management budget alerts (50/80/100% → Slack, ADR-013). This is
    reactive notification, **not** a control; the watchdog + kill-switch are the actual controls.
 
 **Auth:** Managed Identity / Service Principal with Contributor scoped narrowly to the capacity
@@ -53,7 +53,8 @@ rule fences it:
 > capacity-lifecycle control-plane component named in ADR-009 (one Logic App, calling ARM
 > `/resume` + `/suspend` + triggering one named Data Factory pipeline — control-plane only,
 > nothing touching data). Any other external Azure infra file/resource must cite ADR-009 or is
-> presumed scope creep, and remains subject to the FB1–FB4 bans (no AWS/Snowflake/Airflow/Slack).
+> presumed scope creep, and remains subject to the FB1–FB3 bans (no AWS/Snowflake/Airflow). (FB4
+> Slack ban lifted 2026-07-06 per ADR-013 — Slack is now permitted for pipeline-failure alerting.)
 
 If a new `automation/` or `infra/` directory appears, it must contain only resume/suspend/trigger
 logic, import no non-Azure SDK, and be reviewed against FB7.

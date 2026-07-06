@@ -56,7 +56,8 @@
 
 ## M6 — Orchestration (Data Factory — replaces Airflow)
 - Concept: 3 chained Data Factory pipelines replacing the 3 chained Airflow DAGs.
-  Pass/fail branching → Teams connector (not Slack). Data Activator for metric-threshold.
+  Pass/fail branching → Slack Incoming Webhook (ADR-013 — Teams was the original design but is
+  unusable in this MSA-rooted trial tenant). Data Activator for metric-threshold.
 - Artifact: `pipelines/` (stubs) + `docs/PIPELINE_SPEC.md` §5.
 - Production bug angle: if nb_silver_bureau fails, does nb_silver_application re-run? Trace the
   pipeline dependency chain (ADR-006 §3 + PIPELINE_SPEC.md §5.2).

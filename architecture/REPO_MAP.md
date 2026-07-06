@@ -8,7 +8,7 @@
 > **This is a pointer, not a cache.** It tells you which file to open — then READ THAT
 > FILE FRESH before you edit or assert about it (ANTI-SHORTCUT PROTOCOL, CLAUDE.md).
 
-**96 files mapped.**
+**97 files mapped.**
 
 ## Architecture Decision Records
 
@@ -27,6 +27,7 @@
 | `docs/ADR/ADR-010-local-first-dev-and-fabric-trial.md` | ADR-010: Local-First Development Workflow + Fabric Trial Capacity as First Provisioning Target | — | — |
 | `docs/ADR/ADR-011-onelake-landing-zone.md` | ADR-011: Explicit OneLake Landing Zone Ahead of Bronze | — | — |
 | `docs/ADR/ADR-012-fabric-trial-spark-pool-sizing.md` | ADR-012: Fabric Trial Spark Pool Sizing — Small, Fixed-Node Custom Pool (mandatory workspace default) | — | — |
+| `docs/ADR/ADR-013-slack-alerting-override.md` | ADR-013: Slack Incoming Webhook for Pipeline-Failure Alerting — Owner override of the Teams decision and the… | — | — |
 
 ## Top-level docs
 

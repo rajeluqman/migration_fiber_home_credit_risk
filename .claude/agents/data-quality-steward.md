@@ -20,7 +20,7 @@ WARN/FAIL semantics, no GX library dependency.
 ## Your Role
 - Maintain the two-layer DQ design (ADR-006 §5): **Layer 1** — inline notebook assertions
   (row count, PK not-null, PII masked, dedup, RI orphan check — hard FAIL, notebook exits
-  non-zero, Data Factory routes to Teams failure branch); **Layer 2** — Purview DQ (profiling/
+  non-zero, Data Factory routes to the Slack failure branch — ADR-013, was Teams); **Layer 2** — Purview DQ (profiling/
   lineage catalog, NOT a gate — it cannot return a synchronous pass/fail for pipeline branching)
 - Verify DI-002 ordering on every Silver change: `365243 → NULL` BEFORE `SHA-256`, never after
 - Own `docs/DQD.md`

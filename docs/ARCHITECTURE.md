@@ -19,8 +19,10 @@
 
 ## CRITICAL Constraint
 Spark ONLY inside `notebooks/` (Fabric Spark runtime) — no standalone PySpark elsewhere.
-No AWS SDK, no Snowflake connector, no Airflow, no Slack SDK — these are the platforms Fabric
-replaced (`tests/boundary_contract.py` FB1-FB6). dbt is retired entirely — no `profiles.yml`/
+No AWS SDK, no Snowflake connector, no Airflow — these are the platforms Fabric
+replaced (`tests/boundary_contract.py` FB1-FB6). **FB4 Slack ban lifted 2026-07-06 (ADR-013)** —
+Slack re-admitted as the pipeline-failure alerting channel (webhook POST, no SDK) after Teams
+proved unusable in this MSA-rooted trial tenant; FB1-FB3 remain hard bans. dbt is retired entirely — no `profiles.yml`/
 `dbt_project.yml`/`import dbt` anywhere (FB5, ADR-008, supersedes ADR-006 §4). One narrow, fenced
 exception remains: a single external Azure-native capacity-lifecycle control-plane component
 citing ADR-009 (FB7).

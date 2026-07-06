@@ -46,11 +46,13 @@ What **is** true today:
 | DQ gate | Inline notebook assertions (PySpark `assert`, WARN/FAIL semantics) |
 | DQ catalog | Purview DQ (profiling + lineage, not a gate) |
 | Orchestration | Data Factory pipeline (3 chained pipelines) |
-| Alerting | Data Factory Teams connector + Data Activator reflex |
+| Alerting | Data Factory failure-branch → Slack Incoming Webhook (ADR-013 — was Teams) + Data Activator reflex |
 | Query layer | SQL Analytics Endpoint (auto on every Lakehouse) |
 | BI | Power BI Direct Lake |
 
-**Stack boundary (hard):** no AWS/Snowflake/Airflow/Slack. Enforced by `tests/boundary_contract.py`.
+**Stack boundary (hard):** no AWS/Snowflake/Airflow. Enforced by `tests/boundary_contract.py`.
+(Slack was banned too until 2026-07-06, when the Owner re-admitted it for pipeline-failure alerting
+only — ADR-013, after Teams proved unusable in this MSA-rooted Fabric trial tenant.)
 
 ---
 

@@ -58,7 +58,7 @@ Compliance Team to demonstrate GDPR-aligned data handling. Now consolidated onto
 | # | Requirement | Business Value |
 |---|-------------|---------------|
 | BR-07 | Bureau delinquency rate KPI (integration of bureau.csv) | Enriched risk view per applicant |
-| BR-08 | Data Factory pipeline orchestration with Teams pass/fail alerts | Operational visibility |
+| BR-08 | Data Factory pipeline orchestration with Slack pass/fail alerts (ADR-013 — was Teams) | Operational visibility |
 | BR-09 | Income-to-Credit Ratio metric per segment | Risk signal beyond default flag |
 
 ### Could Have (Phase 2 backlog)

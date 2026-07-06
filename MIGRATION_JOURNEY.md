@@ -1193,3 +1193,66 @@ attempt) of real Fabric Spark + Warehouse compute, plus incidental API calls bui
 (not implementation gaps) documented above and in `SIGN_OFF.md`. The real end-to-end pipeline
 chain itself is proven working. **Gate 4 outcome: ☐ OPEN** (3 of 4 conditions still need Owner
 action or a further Entra permission grant to close).
+
+## J-024 · 2026-07-06 (session 7 cont.) · Alerting channel Teams → Slack — Owner override of a @scope-guardian VETO (ADR-013)
+**Trigger:** After G9 was parked (J-023) on the confirmed Teams dead end, the Owner exhausted the
+Teams options out-of-band and returned with a final decision: Teams cannot be used in this tenant
+(it also requires paid licensing the project won't fund), so use a **Slack Incoming Webhook**
+instead — "aku mmg finalize nak guna slack. teams ni mmg kena bayar. apa2 docs adr or gate etc
+ubah ke slack."
+
+**Governance handled properly, not silently:** Slack is an FB4 hard-veto item
+(`tests/boundary_contract.py` + `migration/governance/boundary_contract_fabric.py`), so this was
+NOT actioned on request alone. Per the STOP-GATE + governance-signoff protocol, a real
+**@scope-guardian** persona review was spawned. Verdict: **VETO on Slack** — no carve-out.
+Reasoning (recorded verbatim-ish in ADR-013): unlike FB7 (a *logically necessary* exception — a
+suspended capacity cannot resume itself), notification-on-failure is *substitute-rich*, so no
+necessity justifies re-admitting a banned SDK; recommended **Azure Monitor Action Group → email**
+(OAuth-free, ARM-native) or an **SMTP Logic App** (sidesteps the first-party-AAD/BAP block that
+killed Teams) folded into the already-approved ADR-009 Logic App instead.
+
+**Owner overrode the veto** (2026-07-06), declining the Azure alternatives ("taknak masuk azure
+service. mmg nak guna slack webhook terus je") — reasoning: no new Azure resource wanted beyond
+the single capacity-lifecycle Logic App already carved out under FB7; Teams needs paid licensing;
+a Slack webhook is the lowest-footprint path needing neither. Per this repo's own governance rule,
+the **Owner holds final authority on stack/scope** and @scope-guardian's veto is advisory to the
+Owner — so the veto was overruled, not rescinded. This is the highest-friction path in the repo's
+governance (explicit recorded override of a standing veto), used deliberately so it can't happen
+silently.
+
+**Refactor executed (Teams → Slack, repo-wide, ~20 files):**
+- New anchor ADR: `docs/ADR/ADR-013-slack-alerting-override.md` — documents the Teams dead end, the
+  Owner override, the @scope-guardian veto (kept, not rewritten), and the FB4 lift.
+- **FB4 ban lifted** in both `tests/boundary_contract.py` and
+  `migration/governance/boundary_contract_fabric.py` — `slack_sdk`/`slackclient` removed from the
+  denylist; FB1/FB2/FB3 (AWS/Snowflake/Airflow) unaffected and still hard bans. Also *strengthened*
+  the FB7 scanner in the fabric copy to actively grep for FB1-FB3 banned imports inside any
+  control-plane dir (previously it only checked ADR-009 citation). Both contracts pass green.
+- `.claude/hooks/governance_guard.py` BOUNDARY_MSG + rule citations updated (Slack no longer in the
+  ban string; notes the ADR-013 lift).
+- Stack/boundary docs updated: `CLAUDE.md` (both root + `migration/`), `docs/ARCHITECTURE.md`,
+  `README.md`, `docs/OPS_RUNBOOK.md`, `docs/BRD.md`, `learning/CURRICULUM.md`, `tests/local/README.md`,
+  `.env.example` (`TEAMS_WEBHOOK_URL` → `SLACK_WEBHOOK_URL`).
+- ADRs annotated (history kept legible, not rewritten): ADR-006 (both copies) got a **SUPERSEDED
+  banner** on §6 pointing to ADR-013 (original Teams rationale retained below it); ADR-005 (both
+  copies) rejected-Slack line marked reversed; ADR-007 (both copies) G9 row Teams→Slack; ADR-008,
+  ADR-009, ADR-010 boundary/alerting lines updated.
+- Personas updated: `scope-guardian.md` (veto-overridden note; may still block Slack use *beyond*
+  alerting), `data-platform-engineer.md` (owns Slack-webhook wiring), `data-quality-steward.md`
+  (Slack failure branch).
+- `migration/governance/SIGN_OFF.md` G9 row rewritten: mechanism Teams→Slack, wiring in progress,
+  real fire-test evidence pending the `SLACK_WEBHOOK_URL` value.
+- Dated historical sign-off records (e.g. ADR-005 @scope-guardian's 2026-07-01 line, which said
+  "no Slack SDK") were left untouched — they were true on their date; rewriting a dated sign-off
+  would falsify the record. Append-only logs (this file, `COST_LOG.md`, `PROJECT_STATUS.md` past
+  checkpoints) likewise keep their original J-011/J-023 "parked/declined-Slack" wording — J-024 is
+  the entry that reverses it.
+
+**All static contracts green after the refactor:** boundary (both), identity, doc-reference (now 25
+docs — ADR-013 picked up), unit tests, `py_compile`. `REPO_MAP.md` regenerated (97 files).
+
+**Still pending (real evidence for G9):** the actual pipeline wiring — a Data Factory **Web
+activity on the `gold_warehouse` failure branch** POSTing to `SLACK_WEBHOOK_URL` — plus a real
+fire-test on a simulated Gold failure and a Slack-message screenshot. Blocked only on the Owner
+providing the real Slack webhook URL (a `https://hooks.slack.com/services/...` from a Slack app's
+Incoming Webhooks). G9 stays ☐ Pending until that fire-test produces evidence.

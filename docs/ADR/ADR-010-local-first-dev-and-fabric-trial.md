@@ -50,8 +50,8 @@ contract that would trip **FB6**. ADR-010 introduces a narrow, fenced carve-out:
 > thereof — the ONLY location outside `notebooks/` where it is allowed), provided **every file
 > under `tests/local/` cites ADR-010**. These files are **development/test-only**: they must
 > never be referenced by a Data Factory pipeline (`pipelines/*.json`, statically enforced) and
-> are never deployed to Fabric. The FB1–FB4 SDK bans (no AWS/Snowflake/Airflow/Slack) still
-> apply inside `tests/local/`. Any PySpark elsewhere, or any `tests/local/` file that omits the
+> are never deployed to Fabric. The FB1–FB3 SDK bans (no AWS/Snowflake/Airflow) still
+> apply inside `tests/local/` (FB4 Slack ban lifted 2026-07-06 per ADR-013). Any PySpark elsewhere, or any `tests/local/` file that omits the
 > ADR-010 citation, is a hard FB6/FB8 violation and presumed scope creep.
 >
 > *Enforcement honesty (cf. FB7):* the citation is a string-containment check — it proves a file
@@ -94,8 +94,9 @@ sample parity; paid credit only for full-scale validation.**
 - **Does NOT touch grain/SCD2/identity** (ADR-001/008 unchanged) — this is a *workflow* decision.
 - **Does NOT reopen the stack** — local PySpark is the same Spark family already chosen; it is a
   dev-time convenience, never a deployed component. No new platform is introduced.
-- **Does NOT relax FB1–FB4** — the AWS/Snowflake/Airflow/Slack bans hold everywhere, including
-  `tests/local/`.
+- **Does NOT relax FB1–FB3** — the AWS/Snowflake/Airflow bans hold everywhere, including
+  `tests/local/`. (FB4 Slack ban was later lifted by ADR-013, 2026-07-06, for alerting only —
+  independent of this ADR.)
 - **Adds FB8** — one fenced local-dev carve-out, @scope-guardian veto (parallel to FB7).
 - **Adds a local pre-parity checkpoint** to ADR-007 (Tier 0, see amendment note in that ADR).
 

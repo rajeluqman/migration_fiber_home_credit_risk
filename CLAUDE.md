@@ -18,7 +18,8 @@ you MUST:
    times. Run `python tests/identity_contract.py` and `python tests/boundary_contract.py` before
    calling any mart/notebook change done — these are the binding checks, not your judgement.
 3. **If a rule and the request conflict, STOP and surface it** — do not silently proceed.
-   Mixed-grain dimension, Spark outside notebooks/, AWS/Snowflake/Airflow/Slack reintroduced,
+   Mixed-grain dimension, Spark outside notebooks/, AWS/Snowflake/Airflow reintroduced (Slack is
+   now permitted for alerting only — ADR-013),
    PII masked in the wrong order (DI-002: sentinel→NULL must happen BEFORE SHA-256) → name it,
    cite the doc, and ask @data-architect / @scope-guardian before writing code.
 
@@ -59,13 +60,15 @@ re-platformed onto Microsoft Fabric.
 | Gold/marts | Fabric Warehouse (T-SQL) | **Fabric Warehouse T-SQL stored procedures**, `warehouse/{staging,intermediate,mart,scd2,dq}` | Kimball star, SCD2 = T-SQL MERGE proc (ADR-008, supersedes ADR-006 §4) — dbt retired entirely |
 | Quality | Inline notebook assertions (hard gate) + Purview DQ (catalog, not a gate) | plain PySpark/Python `assert` | two-layer design, ADR-006 §5 |
 | Orchestration | — | Data Factory pipeline (drag-drop canvas), `pipelines/` (3 chained pipelines) | replaces Airflow |
-| Alerting | Teams connector + Data Activator | Data Factory failure branch / metric-threshold reflex | replaces Slack |
+| Alerting | **Slack Incoming Webhook** (ADR-013 — Teams unusable in this MSA-rooted trial tenant: BAP blocks first-party OAuth + needs paid M365 licence) + Data Activator | Data Factory failure-branch Web activity POSTs to `SLACK_WEBHOOK_URL` / metric-threshold reflex | Owner override of the FB4 Slack ban, @scope-guardian veto recorded (J-024) |
 | Serving (query-only) | Gold OneLake | **SQL Analytics Endpoint** (auto-provisioned on every Lakehouse) | replaces Databricks Serverless SQL |
 | BI | Gold OneLake Delta | Power BI **Direct Lake** | no import/refresh cycle |
 
 ⚠️ Stack boundary: **Spark only inside `notebooks/`** (Fabric Spark runtime) — no standalone
 PySpark elsewhere (`tests/boundary_contract.py` FB6). No AWS SDK (FB1), no Snowflake connector
-(FB2), no Airflow (FB3), no Slack SDK (FB4). dbt is retired entirely — no `profiles.yml`/
+(FB2), no Airflow (FB3). **FB4 Slack ban LIFTED 2026-07-06 (ADR-013)** — Slack re-admitted as the
+pipeline-failure alerting channel (webhook POST, no SDK) after Teams proved unusable; FB1-FB3
+remain hard bans. dbt is retired entirely — no `profiles.yml`/
 `dbt_project.yml`/`import dbt` anywhere (FB5, ADR-008). One narrow, fenced exception: a single
 external capacity-lifecycle control-plane component citing ADR-009 (FB7).
 
@@ -87,8 +90,9 @@ re-grain (ADR-005); retiring dbt (ADR-008) re-platforms the *enforcement* mechan
 
 **Governance gate**: @data-architect holds veto on grain/model changes (Kimball star locked,
 ADR-001); @scope-guardian holds veto on stack/scope creep (no Spark outside notebooks/, no
-AWS/Snowflake/Databricks/Airflow/Slack reintroduced, no new ingestion connectors beyond the
-Kaggle API).
+AWS/Snowflake/Databricks/Airflow reintroduced, no new ingestion connectors beyond the
+Kaggle API). Slack was in this ban until 2026-07-06, when the Owner overrode @scope-guardian's
+veto and re-admitted it for pipeline-failure alerting only (ADR-013, J-024).
 
 ## Source Tables (7 files, ≈58.4M rows total — unchanged from parent repo)
 | File | Rows |

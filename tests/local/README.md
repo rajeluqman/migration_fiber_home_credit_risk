@@ -7,7 +7,7 @@ permitted (boundary rule **FB8**, `docs/ADR/ADR-010-local-first-dev-and-fabric-t
 - **Every file here must cite `ADR-010`** — otherwise the FB6 Spark ban applies and CI fails.
 - Files are **dev/test-only**: never referenced by a Data Factory pipeline (`pipelines/*.json`),
   never deployed to Fabric.
-- The FB1–FB4 SDK bans still apply (no AWS / Snowflake / Airflow / Slack SDK).
+- The FB1–FB3 SDK bans still apply (no AWS / Snowflake / Airflow). FB4 Slack ban lifted 2026-07-06 (ADR-013).
 
 ## Purpose
 Prove Silver transform logic (PII-mask order DI-002, XNA→NULL, dedup keys, MERGE upsert

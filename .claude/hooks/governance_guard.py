@@ -14,7 +14,8 @@ Wired in .claude/settings.json for Edit|Write|MultiEdit:
 Contracts wired, by owner (CLAUDE.md governance axes):
   - tests/identity_contract.py               — @data-architect, SK_ID_CURR + SCD2 grain fidelity
   - tests/boundary_contract.py                — @scope-guardian (Spark only inside notebooks/, no
-                                                 AWS/Snowflake/Airflow/Slack, dbt absent, FB7/FB8)
+                                                 AWS/Snowflake/Airflow, dbt absent, FB7/FB8; FB4
+                                                 Slack-ban lifted per ADR-013)
   - migration/governance/boundary_contract_fabric.py — @scope-guardian, portable copy of the
                                                  boundary contract (Gate 1, SIGN_OFF.md); run
                                                  alongside tests/boundary_contract.py wherever
@@ -38,8 +39,9 @@ IDENTITY_MSG = (
     "comparison); exactly 1 is_current=TRUE row per applicant at all times (ADR-001 + DATA_MODEL.md)."
 )
 BOUNDARY_MSG = (
-    "no standalone PySpark outside notebooks/, no AWS/Snowflake/Airflow/Slack "
-    "reintroduced, no new ingestion connector beyond the Kaggle API, no dbt reintroduced (FB5)."
+    "no standalone PySpark outside notebooks/, no AWS/Snowflake/Airflow reintroduced, no new "
+    "ingestion connector beyond the Kaggle API, no dbt reintroduced (FB5). NOTE: FB4 Slack-ban "
+    "lifted 2026-07-06 (ADR-013) — Slack re-admitted for pipeline-failure alerting only."
 )
 ERD_MSG = "Clean-ERD/Kimball doctrine: 1 table = 1 grain = 1 entity, SCD strategy locked per dim (ADR-001)."
 
@@ -56,7 +58,7 @@ RULES: list[tuple[str, str, str, tuple[str, ...]]] = [
     ("warehouse/scd2/", "ADR-001 SCD2 strategy + docs/DATA_MODEL.md + ADR-008 C2-C6", IDENTITY_MSG, IDENTITY_SCRIPTS),
     ("warehouse/dq/", "ADR-008 C4/C8 (THROW assertion gates)", IDENTITY_MSG, IDENTITY_SCRIPTS),
     ("pipelines/", "docs/ARCHITECTURE.md + docs/PIPELINE_SPEC.md (Data Factory chaining)", BOUNDARY_MSG, BOUNDARY_SCRIPTS),
-    ("requirements.txt", "docs/ARCHITECTURE.md stack boundary (no Spark outside notebooks/, no AWS/Snowflake/Airflow/Slack, no dbt)", BOUNDARY_MSG, BOUNDARY_SCRIPTS),
+    ("requirements.txt", "docs/ARCHITECTURE.md stack boundary (no Spark outside notebooks/, no AWS/Snowflake/Airflow, no dbt; Slack alerting OK per ADR-013)", BOUNDARY_MSG, BOUNDARY_SCRIPTS),
     ("automation/", "docs/ADR/ADR-009-capacity-lifecycle-automation.md (FB7 carve-out)", BOUNDARY_MSG, BOUNDARY_SCRIPTS),
     ("infra/", "docs/ADR/ADR-009-capacity-lifecycle-automation.md (FB7 carve-out)", BOUNDARY_MSG, BOUNDARY_SCRIPTS),
     ("migration/governance/", "ADR-006 §4 (Option B) + ADR-008/009 (FB5/FB7) — portable contract copy", BOUNDARY_MSG, BOUNDARY_SCRIPTS),

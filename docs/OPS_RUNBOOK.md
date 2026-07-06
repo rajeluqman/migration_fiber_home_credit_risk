@@ -43,7 +43,7 @@ This is a placeholder for the real provisioning runbook once
 4. Register a Microsoft Entra ID service principal (`AZURE_CLIENT_ID`/`AZURE_CLIENT_SECRET`)
    with Contributor role on the workspace — see `.env.example`.
 5. Create the 3 chained Data Factory pipelines per `docs/PIPELINE_SPEC.md` §5.
-6. Wire Teams webhook / Data Activator reflex actions for pass/fail alerting.
+6. Wire the Slack Incoming Webhook (`SLACK_WEBHOOK_URL`, ADR-013 — was Teams) / Data Activator reflex actions for pass/fail alerting.
 
 Do NOT provision any of the above until Gate 0 in `migration/governance/SIGN_OFF.md` shows
 all four sign-off boxes checked.
