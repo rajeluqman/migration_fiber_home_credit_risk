@@ -1,8 +1,28 @@
 # Project Status — Home Credit Risk Pipeline (Fabric)
 
 ## ▶ RESUME HERE
-**Where we are (2026-07-06, `gate-0.5-option-b-adr-008-009`), latest — GATE 3 CLOSED (G6, G7
-both PASSED against real Fabric Warehouse compute, @data-architect APPROVE-CONDITIONAL).**
+**Where we are (2026-07-06, `gate-0.5-option-b-adr-008-009`), latest — GATE 4 OPEN, G12 CLOSED,
+real end-to-end Data Factory pipeline chain built and run (J-023).**
+J-023: Built the 3 real Fabric Data Factory pipelines (`pipelines/` was still `_stub: true`
+placeholders) — `bronze_ingestion` → `silver_transforms` → `gold_warehouse`, chained via
+`InvokePipeline`. Hit and resolved 2 real platform gaps: (1) SP connection-creation `401` — root
+cause was the Fabric-login account (`fabricpipelines@...`) had only capacity-admin, not
+tenant-admin, role; Owner assigned Global Admin + enabled 2 tenant settings (SP can
+create connections; SP can call Fabric public APIs), unblocking `Script`/`InvokePipeline`
+activities. (2) First full run failed on `[TooManyRequestsForCapacity]` — the parallel 4-notebook
+Silver fan-out (per `docs/PIPELINE_SPEC.md` §5.2) exceeded `SmallFixedPool`'s single-node
+concurrency; Owner-approved fix: serial DAG instead. **Second full run succeeded end-to-end**
+(~37 min) — Gold row counts (307,511 / 307,511 / 1,716,428 / 12,861,994) verified via live query
+matching the J-022 baseline exactly (idempotent rebuild, no drift). **G12 CLOSED** (CI run
+28768336125, PR #2, after fixing a stale `REPO_MAP.md`). **G9 parked** (Teams: both classic
+Connectors and the Workflows app are unavailable in this tenant — real M365 licence-tier gap,
+same class as J-011). **G10 and G11 remain Owner-action items** (Power BI Direct Lake report
+needs Owner to build+screenshot in browser; CU cost needs either an Entra Admin-API permission
+grant or the Owner checking the Fabric Capacity Metrics app). Full detail: `MIGRATION_JOURNEY.md`
+J-023, cost in `COST_LOG.md` 2026-07-06 (session 7).
+
+**Previous checkpoint (J-022): GATE 3 CLOSED (G6, G7 both PASSED against real Fabric Warehouse
+compute, @data-architect APPROVE-CONDITIONAL).**
 J-022: @data-architect reviewed the 6 real Fabric Warehouse findings from J-021 (below) plus the
 browser-validated fix and returned **APPROVE-CONDITIONAL**
 (`migration/governance/GATE3_ARCHITECT_REVIEW_J021.md`) — no veto (no re-grain, no identity
@@ -29,10 +49,13 @@ state), C4 both-direction THROW, and C8 fact-grain THROW were all proven via scr
 instead, with real production tables confirmed untouched throughout. `migration/governance/
 SIGN_OFF.md` Gate 3 table updated to ☑ CLOSED. Full detail: `MIGRATION_JOURNEY.md` J-022, cost in
 `COST_LOG.md` 2026-07-06 (session 6).
-**Next action:** Gate 4 (End-to-End Validation + Alerting) — Data Factory pipeline wiring to
-invoke the Gold build procs in dependency order (staging→intermediate→dim→facts→DQ), Data
-Activator + Teams alerting on a simulated failure (G9), Power BI Direct Lake report (G10), CU
-cost check (G11), boundary contract in CI (G12).
+**Next action (superseded by J-023 above):** ~~Gate 4 (End-to-End Validation + Alerting) — Data
+Factory pipeline wiring...~~ — done in J-023. **Actual next action now:** G10 (Owner builds a
+Power BI Direct Lake report over the Gold tables in browser, screenshots it), G11 (either grant
+the SP's Entra app registration the Fabric Admin API permission, or Owner checks the Fabric
+Capacity Metrics app), G9 stays parked pending a fuller M365 licence. Once G10/G11 close (or are
+explicitly accepted as parked like G9), Gate 4 can be marked CLOSED and Gate 5 (AWS/Snowflake
+teardown authorisation) can be considered.
 
 **Previous checkpoint (J-021): Gate 3 kickoff, BLOCKED on 3 real Fabric Warehouse findings,
 Owner/@data-architect decision needed.**

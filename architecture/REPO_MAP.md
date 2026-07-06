@@ -109,7 +109,7 @@
 
 | File | Purpose | Uses | Used by |
 |------|---------|------|---------|
-| `pipelines/README.md` | Data Factory Pipelines (stubs) | — | — |
+| `pipelines/README.md` | Data Factory Pipelines (real, deployed — Gate 4, J-023) | — | — |
 | `pipelines/bronze_ingestion.json` | — | — | — |
 | `pipelines/gold_warehouse.json` | — | — | — |
 | `pipelines/silver_transforms.json` | — | — | — |

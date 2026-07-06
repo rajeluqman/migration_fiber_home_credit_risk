@@ -1,10 +1,51 @@
 {
-  "_stub": true,
-  "name": "bronze_ingestion",
-  "description": "Data Factory pipeline stub — Kaggle download Fabric Notebook -> OneLake Bronze. Real pipeline JSON is exported from the Fabric UI once a workspace is provisioned (migration/governance/SIGN_OFF.md Gate 1). See docs/PIPELINE_SPEC.md section 5.",
-  "chain_position": "1 of 3",
-  "triggers": "gold_dbt runs after silver_transforms runs after this",
-  "activities": [
-    "notebook: nb_bronze_ingest (Kaggle API download -> OneLake Bronze Delta)"
-  ]
+  "properties": {
+    "activities": [
+      {
+        "name": "nb_bronze_ingest",
+        "type": "TridentNotebook",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "d56abc42-a29e-4b1b-8554-737b5e5a7f3d",
+          "workspaceId": "a52bc51e-6afe-4675-9f63-3e45b36c07d6"
+        }
+      },
+      {
+        "name": "trigger_silver_transforms",
+        "type": "InvokePipeline",
+        "dependsOn": [
+          {
+            "activity": "nb_bronze_ingest",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "operationType": "InvokeFabricPipeline",
+          "pipelineId": "264ac3dc-6fb0-43bc-a363-b2db00e66e62",
+          "workspaceId": "a52bc51e-6afe-4675-9f63-3e45b36c07d6",
+          "waitOnCompletion": true,
+          "parameters": {}
+        },
+        "externalReferences": {
+          "connection": "a5ab3da0-dcb7-4a80-9120-3e4705a81281"
+        }
+      }
+    ]
+  }
 }

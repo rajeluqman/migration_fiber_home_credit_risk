@@ -1079,3 +1079,107 @@ limitation since J-016). See `COST_LOG.md` 2026-07-06 (session 6) entry.
 
 **Status: Gate 3 conditions G6 and G7 are now PASSED against real Fabric Warehouse compute.**
 `migration/governance/SIGN_OFF.md` Gate 3 table updated accordingly. **Gate 3: CLOSED.**
+
+## J-023 · 2026-07-06 (session 7) · Gate 4 — real Data Factory pipelines built and chained, real end-to-end run, 3 real platform gaps found and 1 fixed
+**Goal:** Gate 4 (End-to-End Validation + Alerting) — build the 3 real Data Factory pipelines
+(`pipelines/` was still `_stub: true` placeholders), chain them, run the full real bronze→
+silver→gold chain once, and verify G9-G12.
+
+**Tooling-gap check first (per established pattern):** `fab desc .DataPipeline` showed `import`/
+`job run`/`job start` are supported — unlike the Warehouse T-SQL gap from J-021, no missing verb
+here. Schema for the item's `pipeline-content.json` was never guessed: created a throwaway
+`.DataPipeline` item, called `getDefinition` on its empty state to see the real base structure,
+then validated every activity type (`TridentNotebook`, `Script`, `InvokePipeline`) against the
+live API via `updateDefinition` on throwaway items before touching the real 3 pipelines.
+
+**Real finding 1 — Connection-creation 401 (tenant-permission gate, not a bug):** `TridentNotebook`
+activities need no external connection (schema-validated + confirmed live), but `Script`
+(Warehouse T-SQL) and `InvokePipeline` (even same-workspace "legacy" chaining) both require a
+Fabric **Connection** object. `POST /v1/connections` returned `401 Unauthorized` for the SP even
+though `GET /v1/connections` worked — matching Microsoft's documented requirement that SP
+connection-creation needs an explicit tenant setting. Owner's Entra account
+(`sezenkaraaslan@g...`) turned out to be Global Administrator, but the account actually used to
+log into Fabric (`fabricpipelines@sezenkaraaslan18gmail.onmicrosoft.com`) was only a capacity
+admin with no tenant-admin role assignment — root-caused via Entra ID → Roles and administrators.
+Owner assigned Global Admin to the Fabric-login account, then enabled tenant settings **"Service
+principals can create workspaces, connections, and deployment pipelines"** and **"Service
+principals can call Fabric public APIs"** in the Fabric Admin Portal (Developer settings). ~15 min
+propagation later, `POST /v1/connections` succeeded (`201`) for both a `SQL`-type Warehouse
+connection (ServicePrincipal auth) and a `FabricDataPipelines`-type connection (for
+`InvokePipeline`).
+- Warehouse connection id: `3dd522d4-eac9-4e01-b646-6ecc523e907a`
+- InvokePipeline connection id: `a5ab3da0-dcb7-4a80-9120-3e4705a81281`
+
+**Real finding 2 — Concurrency ceiling, not a pool-sizing issue (different from ADR-012/J-019):**
+First full end-to-end run (`bronze_ingestion` job `6b4d41d0...`, 05:30:44–05:54:09 UTC) had
+`nb_bronze_ingest` and `nb_silver_application` complete fine, but of the 4 parallel fan-out Silver
+notebooks (`nb_silver_bureau`, `nb_silver_previous_application`, `nb_silver_installments`,
+`nb_silver_balance_tables` — the DAG shape documented in `docs/PIPELINE_SPEC.md` §5.2), 2
+succeeded and 2 (`installments`, `balance_tables`) failed with the same
+`[TooManyRequestsForCapacity] HTTP 430` error class as ADR-012, but from **concurrency** this
+time — `SmallFixedPool`'s single fixed node can't run 4 simultaneous Livy sessions. J-020's prior
+real run never hit this because it tested the 5 notebooks serially, one at a time; this was the
+first time the parallel fan-out was actually exercised end-to-end. Root-caused via bisection:
+queried each item's own `jobs/instances` for the same time window (the pipeline-run-level API
+only returns a generic `"Pipeline run Failed"` — no activity-level detail endpoint exists in the
+public Fabric REST API; `queryactivityruns` returns empty for reasons not fully diagnosed).
+**Fix (Owner-approved, infra-only — no grain/SCD2/PII change):** changed `silver_transforms`'s DAG
+from parallel fan-out to serial chaining (`nb_application >> nb_bureau >> nb_previous_application
+>> nb_installments >> nb_balance_tables >> trigger_gold_warehouse`) — same dependency
+correctness, one notebook running at a time, stays within `SmallFixedPool`'s concurrency limit.
+Deviates from the parallel DAG shown in `docs/PIPELINE_SPEC.md` §5.2 (doc not yet updated to
+match — flagged here as a to-do).
+
+**Real end-to-end run (after the serial fix), job `c813bd3a...`, 06:08:21–06:45:10 UTC (~37 min):**
+All 5 Silver notebooks completed serially, `gold_warehouse` (chained via `InvokePipeline`)
+completed in ~91s. **Verified via live query against the real Warehouse** (pyodbc + AAD access
+token, same method as J-021), not just trusting the job-status "Completed":
+- `dim_applicant`: 307,511 total, 307,511 `is_current=1` — exact match to the J-022 baseline,
+  confirms the SCD2 rebuild triggered by Data Factory is idempotent (no drift/duplication).
+- `fact_loan_application`: 307,511 · `fact_bureau_credit`: 1,716,428 ·
+  `fact_installment_payment`: 12,861,994 — all exact matches to J-022.
+
+**G12 (CI):** branch had never been pushed. Pushed `gate-0.5-option-b-adr-008-009`, opened PR #2
+(`https://github.com/rajeluqman/migration_fiber_home_credit_risk/pull/2`) to trigger CI (workflow
+only fires on push/PR to `main`, not arbitrary branch pushes). First CI run
+(`28768246388`) failed on an unrelated stale `architecture/REPO_MAP.md` (drifted since J-021/J-022
+SCD2 file changes, never regenerated) — fixed with `python scripts/gen_repo_map.py` + commit.
+Second run (`28768336125`) fully green, `boundary_contract_fabric.py` step passing. **G12: CLOSED.**
+
+**G9 (Teams alert) — parked, real licence-tier gap, not a permissions issue this time:** Confirmed
+two independent dead ends in the same Teams tenant: (1) classic "Connectors" (Incoming Webhook) —
+retired product-wide by Microsoft, no longer offered in any tenant; (2) the modern "Workflows" app
+replacement — not present/installed in this tenant at all (not even after confirming Global Admin
+access). This reproduces J-011's finding under a different, now-admin-capable account, confirming
+it's the tenant's M365 licence tier, not an SP/account-permission gap. Parked exactly like
+`TEAMS_WEBHOOK_URL` was parked at J-011 — G9 stays open pending a fuller M365 licence.
+
+**G10 (Power BI Direct Lake) — Owner-owned evidence, not yet captured:** No Semantic Model item
+exists yet over `home_credit_warehouse` (`GET items?type=SemanticModel` → empty). Per
+`SIGN_OFF.md`'s own evidence-type column ("Report screenshot ... Owner"), this gate is designed to
+be captured by the Owner in-browser, not built headless via API. Remains ☐ Pending.
+
+**G11 (CU cost) — real, more specific finding than J-016's:** `admin/capacities` now returns `403
+InsufficientScopes` (previously `404` at J-016) — a clearer diagnosis: the endpoint exists, but
+the SP's Entra app registration lacks the Fabric Admin API permission grant, a separate config
+step from the tenant settings fixed this session for connection creation. Confirmed no non-admin
+substitute exists (`GET /capacities/{id}` and `/workloads` give no usage/CU data, only metadata).
+Remains ☐ Pending — needs either that Entra grant, or the Owner checking the "Microsoft Fabric
+Capacity Metrics" app in browser.
+
+**Repo state:** `pipelines/{bronze_ingestion,silver_transforms,gold_warehouse}.json` updated from
+`_stub: true` placeholders to the real deployed `pipeline-content.json` bodies (fetched via
+`getDefinition`, not hand-written) — these are point-in-time exports, not authoritative (the
+Fabric items themselves are authoritative; these are checked in for repo visibility only, same
+spirit as `warehouse/*.sql` being the source of truth for T-SQL).
+
+**Cost:** ~24 min (first, failed, parallel-fanout attempt) + ~37 min (second, serial, successful
+attempt) of real Fabric Spark + Warehouse compute, plus incidental API calls building/validating
+5 throwaway pipeline items (all deleted). Real CU still unverified against a metering API
+(unchanged limitation since J-016, now root-caused further per G11 above). See `COST_LOG.md`
+2026-07-06 (session 7) entry.
+
+**Status:** Gate 4 — G12 CLOSED. G9/G10/G11 remain ☐ Pending on real platform/licence/scope gaps
+(not implementation gaps) documented above and in `SIGN_OFF.md`. The real end-to-end pipeline
+chain itself is proven working. **Gate 4 outcome: ☐ OPEN** (3 of 4 conditions still need Owner
+action or a further Entra permission grant to close).

@@ -263,3 +263,22 @@ testing).
 (negligible CU, all sample-scale). Real CU still unverified against a metering API in this
 sandbox (unchanged limitation since J-016). **Gate 3 (G6, G7) — both conditions now PASSED
 against real Fabric Warehouse compute.** Full detail: `MIGRATION_JOURNEY.md` J-022.
+
+## 2026-07-06 (session 7) — Gate 4: real Data Factory pipelines, real end-to-end run
+- ~24 min real Fabric Spark compute: first end-to-end attempt (`bronze_ingestion` job
+  `6b4d41d0...`), failed partway on 2 of 4 parallel-fanout Silver notebooks
+  ([TooManyRequestsForCapacity] concurrency limit on SmallFixedPool's single fixed node) —
+  `nb_bronze_ingest` + `nb_silver_application` + 2 of 4 fanout notebooks did complete for real
+  before the failure.
+- ~37 min real Fabric Spark + Warehouse compute: second attempt after switching the DAG to serial
+  (`silver_transforms` job `c813bd3a...`, 06:08:21-06:45:10 UTC) — all 5 Silver notebooks +
+  `gold_warehouse` (4 Script-activity EXECs) completed successfully.
+- Incidental: ~6 throwaway `.DataPipeline` items created/schema-validated/deleted during API
+  discovery (zz_test_pipeline, zz_test_pipeline2, zz_target_pipeline, zz_test_script,
+  zz_test_invoke) — negligible cost, no compute run except zz_test_script's single `SELECT 1`
+  and zz_test_invoke (schema-validated only, not executed).
+- 2 Connection objects created (Warehouse SQL, FabricDataPipelines) — no compute cost, metadata
+  only.
+- Real CU still unverified against a metering API — `admin/capacities` now `403
+  InsufficientScopes` (endpoint exists, SP lacks the Fabric Admin API permission grant), clearer
+  diagnosis than J-016's `404` but still unresolved. See MIGRATION_JOURNEY.md J-023, G11.

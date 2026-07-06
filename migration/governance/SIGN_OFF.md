@@ -142,12 +142,16 @@ Full pipeline run in Fabric, alerting live, BI confirmed.
 
 | Condition (ADR-007 reference) | Evidence | Owner | Status |
 |---|---|---|---|
-| G9: Data Activator + Teams alert fires on simulated failure | Screenshot/Teams message log | @data-platform-engineer | ☐ Pending |
-| G10: Power BI Direct Lake report loads without error | Report screenshot + semantic model log | Owner | ☐ Pending |
-| G11: Fabric CU cost post-first-run within estimate from Gate 0 | CU usage screenshot from Fabric admin | @finops-agent | ☐ Pending |
-| G12: `boundary_contract_fabric.py` exits 0 in new repo CI | CI run link | @scope-guardian | ☐ Pending |
+| G9: Data Activator + Teams alert fires on simulated failure | Screenshot/Teams message log | @data-platform-engineer | ☐ Pending — **blocked, real finding**: this tenant's M365 licence has neither classic Teams Connectors (retired product-wide) nor the Workflows app (not present in this tenant) — same class of gap as J-011's Power Automate licence failure, confirmed independently via two dead ends this session. Parked; revisit if/when a fuller M365 licence is available. See `MIGRATION_JOURNEY.md` J-023. |
+| G10: Power BI Direct Lake report loads without error | Report screenshot + semantic model log | Owner | ☐ Pending — no Semantic Model item exists yet over `home_credit_warehouse`; needs Owner to open Power BI/Fabric in browser, create a Direct Lake report against the Gold tables, and capture the screenshot (this evidence type is explicitly Owner/browser-captured per this table, not API-automatable) |
+| G11: Fabric CU cost post-first-run within estimate from Gate 0 | CU usage screenshot from Fabric admin | @finops-agent | ☐ Pending — confirmed real limitation: `admin/capacities` API returns `403 InsufficientScopes` for the SP (a clearer diagnosis than J-016's earlier `404` — the endpoint exists but the SP's Entra app registration lacks the Fabric Admin API permission grant, a separate config step from the tenant settings fixed this session). Needs either that Entra API-permission grant, or Owner to check the "Microsoft Fabric Capacity Metrics" app in browser. |
+| G12: `boundary_contract_fabric.py` exits 0 in new repo CI | CI run link | @scope-guardian | ☑ **CLOSED** — [CI run 28768336125](https://github.com/rajeluqman/migration_fiber_home_credit_risk/actions/runs/28768336125) on PR #2, fully green (also fixed a stale `REPO_MAP.md` blocking full-green CI) |
 
-**Gate 4 outcome:** ☐ OPEN
+**Gate 4 outcome:** ☐ OPEN — G12 closed; real end-to-end pipeline chain (bronze_ingestion →
+silver_transforms → gold_warehouse) built and run for real via Fabric Data Factory this session
+(J-023), Gold row counts verified matching the J-022 baseline exactly. G9/G10/G11 remain open on
+real platform/licence/scope gaps documented above, not implementation gaps — see J-023 for full
+evidence.
 
 ---
 
