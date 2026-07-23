@@ -20,28 +20,31 @@ Same business problem as the parent repo; different compute surface. The Fabric 
 
 ## Status
 
-> 📍 **`main` is the Gate-0 governance-framework port. The pipeline has since been provisioned and
-> run end-to-end on real Fabric compute — that work lives on branch
-> [`gate-0.5-option-b-adr-008-009`](../../tree/gate-0.5-option-b-adr-008-009) (PR #2, awaiting
-> merge). Read that branch, not this one, for current state.**
+> ✅ **Provisioned and run end-to-end on real Fabric compute.** Gates 0 → 3 are signed and closed
+> (`migration/governance/SIGN_OFF.md`); Gate 4 is open with two Owner-browser items remaining.
 
-What is true on **`main`** (this branch):
-- Full governance framework is a 1:1 port of the parent repo `home-credit-pipeline`, retargeted to
-  Fabric per `migration/ADR/ADR-006-fabric-native-service-mapping.md`.
-- 3 static contracts pass: `tests/boundary_contract.py`, `tests/identity_contract.py`,
-  `tests/doc_reference_contract.py`.
-- Pre-migration benchmarks (`migration/benchmarks/`) are real numbers pulled from the parent
-  repo's proven AWS Glue runs — the bar Fabric output must clear (ADR-007).
+What **is** proven today (evidence in `MIGRATION_JOURNEY.md` J-021…J-025, `PROJECT_STATUS.md`):
+- **Full end-to-end run succeeded** (~37 min) across the 3 chained Data Factory pipelines —
+  `bronze_ingestion` → `silver_transforms` → `gold_warehouse` — against the real Fabric workspace.
+- **Idempotent rebuild, no row-count drift**: Gold row counts verified by live query and matching
+  the prior baseline exactly (307,511 dim / 307,511 / 1,716,428 / 12,861,994 fact rows).
+- **Gate 3 CLOSED against real Fabric Warehouse compute** — SCD Type 2 one-current-record-per-entity
+  invariant confirmed at full scale (307,511 rows, 0 violations), all fact grains matched to Silver
+  source counts. @data-architect review: `migration/governance/GATE3_ARCHITECT_REVIEW_J021.md`.
+- **Failure alerting fire-tested** (G9): a Data Factory `Failed` branch POSTs to Slack via a
+  `WebForPipeline` connection (webhook held in the connection store, never in git); wired into
+  production `silver_transforms`. ADR-013 records the Teams → Slack change and the reason.
+- **CI green** (G12) and 4 static contracts pass: `tests/boundary_contract.py`,
+  `tests/identity_contract.py`, `tests/doc_reference_contract.py`, `migration/governance/
+  boundary_contract_fabric.py`.
+- Pre-migration benchmarks (`migration/benchmarks/`) are real numbers from the parent repo's proven
+  AWS Glue runs — the bar Fabric output had to clear (ADR-007).
 
-What is proven on **`gate-0.5-option-b-adr-008-009`** (see that branch's README for evidence):
-- Full end-to-end run succeeded (~37 min) across 3 chained Data Factory pipelines on the real
-  Fabric workspace; Gold row counts verified idempotent with no drift.
-- Gate 3 CLOSED against real Fabric Warehouse compute — SCD Type 2 one-current-record invariant
-  confirmed at full scale, 0 violations; fact grains matched to Silver source counts.
-- dbt retired in favour of Fabric Warehouse T-SQL stored procedures (ADR-008) — note the Stack
-  table below still reflects `main`'s pre-ADR-008 state.
-- Failure alerting fire-tested (Data Factory `Failed` branch → Slack, ADR-013); CI green.
-- Genuinely outstanding: G10 (Power BI Direct Lake report not yet built) and G11 (CU cost capture).
+Still open (honestly outstanding, Gate 4):
+- **G10** — Power BI Direct Lake report over the Gold tables not yet built. Direct Lake is the
+  designed serving mode and the SQL Analytics Endpoint is live, but no report/screenshot exists yet.
+- **G11** — CU cost capture blocked on a Fabric Admin API permission (`admin/capacities` returns
+  `403 InsufficientScopes`); pending the Capacity Metrics app instead.
 
 ---
 
@@ -52,15 +55,17 @@ What is proven on **`gate-0.5-option-b-adr-008-009`** (see that branch's README 
 | Ingest | Fabric Notebook (Kaggle API download) → Data Factory pipeline |
 | Bronze/Silver/Gold storage | OneLake Lakehouse (Delta, native ACID) |
 | Silver transform | Fabric Spark Notebook (PySpark, Runtime 1.3 = Spark 3.5) |
-| Gold transform | dbt Core + dbt-fabric adapter (`type: fabric`) — Fabric Warehouse T-SQL |
+| Gold transform | Fabric Warehouse T-SQL stored procedures (`warehouse/`) — dbt retired, ADR-008 |
 | DQ gate | Inline notebook assertions (PySpark `assert`, WARN/FAIL semantics) |
 | DQ catalog | Purview DQ (profiling + lineage, not a gate) |
 | Orchestration | Data Factory pipeline (3 chained pipelines) |
-| Alerting | Data Factory Teams connector + Data Activator reflex |
+| Alerting | Data Factory failure-branch → Slack Incoming Webhook (ADR-013 — was Teams) + Data Activator reflex |
 | Query layer | SQL Analytics Endpoint (auto on every Lakehouse) |
 | BI | Power BI Direct Lake |
 
-**Stack boundary (hard):** no AWS/Snowflake/Airflow/Slack. Enforced by `tests/boundary_contract.py`.
+**Stack boundary (hard):** no AWS/Snowflake/Airflow. Enforced by `tests/boundary_contract.py`.
+(Slack was banned too until 2026-07-06, when the Owner re-admitted it for pipeline-failure alerting
+only — ADR-013, after Teams proved unusable in this MSA-rooted Fabric trial tenant.)
 
 ---
 

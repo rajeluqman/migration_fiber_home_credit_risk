@@ -24,8 +24,8 @@ Compliance Team to demonstrate GDPR-aligned data handling. Now consolidated onto
 
 **Resume Entry Being Proven (Fabric variant):**
 > "Re-platformed a 58M-row credit risk pipeline from a 4-vendor AWS/Snowflake/Databricks stack
-> to a fully Fabric-native architecture (OneLake, Fabric Spark, dbt-fabric, Power BI Direct
-> Lake), eliminating cross-cloud egress and consolidating to a single billing/IAM surface."
+> to a fully Fabric-native architecture (OneLake, Fabric Spark, Fabric Warehouse T-SQL, Power BI
+> Direct Lake), eliminating cross-cloud egress and consolidating to a single billing/IAM surface."
 
 ---
 
@@ -58,7 +58,7 @@ Compliance Team to demonstrate GDPR-aligned data handling. Now consolidated onto
 | # | Requirement | Business Value |
 |---|-------------|---------------|
 | BR-07 | Bureau delinquency rate KPI (integration of bureau.csv) | Enriched risk view per applicant |
-| BR-08 | Data Factory pipeline orchestration with Teams pass/fail alerts | Operational visibility |
+| BR-08 | Data Factory pipeline orchestration with Slack pass/fail alerts (ADR-013 — was Teams) | Operational visibility |
 | BR-09 | Income-to-Credit Ratio metric per segment | Risk signal beyond default flag |
 
 ### Could Have (Phase 2 backlog)
@@ -114,7 +114,7 @@ Compliance Team to demonstrate GDPR-aligned data handling. Now consolidated onto
 | BR-RULE-03 | bureau.SK_ID_CURR must exist in application_train (referential integrity) | DQS | Silver inline assertion |
 | BR-RULE-04 | AMT_CREDIT > 0 always. Zero or negative = quarantine. | DQS | Silver inline assertion |
 | BR-RULE-05 | DAYS_BIRTH and DAYS_EMPLOYED masked via SHA-256 before Silver write | DE | Fabric Spark Silver notebook |
-| BR-RULE-06 | SCD Type 2: only one is_current=True record per SK_ID_CURR in dim_applicant | AE | dbt-fabric Gold |
+| BR-RULE-06 | SCD Type 2: only one is_current=True record per SK_ID_CURR in dim_applicant | AE | warehouse/ T-SQL Gold (ADR-008) |
 
 ---
 

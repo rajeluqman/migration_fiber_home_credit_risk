@@ -35,22 +35,29 @@
 - Production bug angle: what if you forget the MERGE and just do an overwrite? Trace the downstream
   dedup failure path.
 
-## M4 — Gold: dbt-fabric staging → intermediate → mart (T-SQL dialect review)
-- Concept: 3-layer dbt structure is UNCHANGED. The dialect is different: `QUALIFY` does not exist
-  in T-SQL. How do you rewrite `QUALIFY ROW_NUMBER() OVER (...) = 1`?
-- Artifact: `dbt_fabric/models/{staging,intermediate,mart}/` stubs — write the real SQL as DIY.
-- DIY ticket: rewrite `stg_application.sql` for T-SQL without using `QUALIFY`.
+## M4 — Gold: warehouse/ staging → intermediate → mart (dbt retired, ADR-008)
+- Concept: the 3-layer staging/intermediate/mart structure is UNCHANGED, but it's now plain
+  T-SQL views + stored procs, no dbt. `QUALIFY` does not exist in T-SQL. How do you rewrite
+  `QUALIFY ROW_NUMBER() OVER (...) = 1`?
+- Artifact: `warehouse/{staging,intermediate,mart}/` — read the real SQL, then extend it.
+- DIY ticket: rewrite `stg_application.sql` for T-SQL without using `QUALIFY` (hint: it already
+  is — compare to the retired dbt version in git history, `git log -- dbt_fabric/`).
 
-## M5 — SCD Type 2 (the resume-proof centerpiece — unchanged)
-- Concept: `dbt snapshot`, `strategy: check`, `dbt_valid_from`/`dbt_valid_to` → `start_date`/
-  `end_date`/`is_current`. Run `tests/identity_contract.py` to see the static gate.
-- Artifact: `dbt_fabric/snapshots/snap_applicant.sql` + `dbt_fabric/models/mart/dim_applicant.sql`.
-- Fabric-specific: does the dbt-fabric adapter change anything about snapshot behaviour? (Answer: no —
-  `strategy: check` is adapter-agnostic dbt logic; only the T-SQL target dialect changes.)
+## M5 — SCD Type 2 (the resume-proof centerpiece — mechanism changed, grain didn't)
+- Concept: `dbt snapshot`/`strategy: check` retired → a T-SQL MERGE stored proc
+  (`warehouse/scd2/dim_applicant_scd2_merge.sql`) with a NULL-safe per-column comparison
+  (ADR-008 C3) doing the same job `dbt_valid_from`/`dbt_valid_to` used to. Run
+  `tests/identity_contract.py` to see the static gate.
+- Artifact: `warehouse/scd2/dim_applicant_scd2_merge.sql` (+ `_fallback.sql`) and
+  `warehouse/mart/dim_applicant.sql`.
+- Fabric-specific: why can't a single MERGE statement both expire an old row AND insert its new
+  version in one pass? (Answer: same key can't hit two branches — see the comment in
+  `dim_applicant_scd2_merge.sql` and `warehouse/PROOF_C3_C4_C5.md`.)
 
 ## M6 — Orchestration (Data Factory — replaces Airflow)
 - Concept: 3 chained Data Factory pipelines replacing the 3 chained Airflow DAGs.
-  Pass/fail branching → Teams connector (not Slack). Data Activator for metric-threshold.
+  Pass/fail branching → Slack Incoming Webhook (ADR-013 — Teams was the original design but is
+  unusable in this MSA-rooted trial tenant). Data Activator for metric-threshold.
 - Artifact: `pipelines/` (stubs) + `docs/PIPELINE_SPEC.md` §5.
 - Production bug angle: if nb_silver_bureau fails, does nb_silver_application re-run? Trace the
   pipeline dependency chain (ADR-006 §3 + PIPELINE_SPEC.md §5.2).

@@ -1,0 +1,123 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "name": "build_dim_applicant",
+        "type": "Script",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "scripts": [
+            {
+              "type": "NonQuery",
+              "text": "EXEC dbo.usp_build_dim_applicant"
+            }
+          ],
+          "scriptBlockExecutionTimeout": "02:00:00"
+        },
+        "externalReferences": {
+          "connection": "3dd522d4-eac9-4e01-b646-6ecc523e907a"
+        }
+      },
+      {
+        "name": "build_fact_bureau_credit",
+        "type": "Script",
+        "dependsOn": [
+          {
+            "activity": "build_dim_applicant",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "scripts": [
+            {
+              "type": "NonQuery",
+              "text": "EXEC dbo.usp_build_fact_bureau_credit"
+            }
+          ],
+          "scriptBlockExecutionTimeout": "02:00:00"
+        },
+        "externalReferences": {
+          "connection": "3dd522d4-eac9-4e01-b646-6ecc523e907a"
+        }
+      },
+      {
+        "name": "build_fact_installment_payment",
+        "type": "Script",
+        "dependsOn": [
+          {
+            "activity": "build_dim_applicant",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "scripts": [
+            {
+              "type": "NonQuery",
+              "text": "EXEC dbo.usp_build_fact_installment_payment"
+            }
+          ],
+          "scriptBlockExecutionTimeout": "02:00:00"
+        },
+        "externalReferences": {
+          "connection": "3dd522d4-eac9-4e01-b646-6ecc523e907a"
+        }
+      },
+      {
+        "name": "build_fact_loan_application",
+        "type": "Script",
+        "dependsOn": [
+          {
+            "activity": "build_dim_applicant",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "scripts": [
+            {
+              "type": "NonQuery",
+              "text": "EXEC dbo.usp_build_fact_loan_application"
+            }
+          ],
+          "scriptBlockExecutionTimeout": "02:00:00"
+        },
+        "externalReferences": {
+          "connection": "3dd522d4-eac9-4e01-b646-6ecc523e907a"
+        }
+      }
+    ]
+  }
+}

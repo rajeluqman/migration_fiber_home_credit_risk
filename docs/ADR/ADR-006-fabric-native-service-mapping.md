@@ -43,6 +43,11 @@ that runs the Kaggle download script.**
   Power BI Direct Lake) reads the same OneLake path — zero data copies between layers.
 - Bronze Lakehouse, Silver Lakehouse, and Gold Lakehouse/Warehouse are separate Fabric
   items in the same workspace, maintaining medallion separation without separate billing.
+- **Refined by ADR-011:** an explicit **Landing** layer sits ahead of Bronze — raw CSVs land
+  byte-for-byte in the Lakehouse **Files** area (`Files/landing/`) before Bronze materializes
+  them into typed Delta **Tables**. Still one OneLake storage surface (same Lakehouse, Files vs
+  Tables area), so "one storage surface / zero egress" holds unchanged; ADR-011 refines this
+  decision, it does not reverse it.
 
 ### 3. Silver transform compute (replaces 5 AWS Glue PySpark jobs)
 **Decision: 5 Fabric Spark Notebooks (one per Glue job) — PySpark code ports ~1:1.**
@@ -59,8 +64,20 @@ that runs the Kaggle download script.**
   `nb_silver_balance_tables`, `nb_silver_installments`, `nb_silver_previous_application`.
 - Notebooks are scheduled via Data Factory pipeline activities (see §1), replacing the
   3 chained Airflow DAGs.
+- **Refined by ADR-012 (Spark pool sizing):** on the FTL4 **Trial** capacity these notebooks MUST
+  run against a custom **Small, autoscale-disabled, single fixed-node** pool (`SmallFixedPool`),
+  set as the workspace default — the auto-provisioned Medium/autoscale-1-10 "Starter Pool" is
+  oversized for the Trial admission ceiling and made every job fail at Livy-session creation with
+  HTTP 430 `TooManyRequestsForCapacity` (`docs/ADR/ADR-012-fabric-trial-spark-pool-sizing.md`,
+  `MIGRATION_JOURNEY.md` J-019). This pins the pool sizing §3 left unspecified; it does not change
+  the engine, notebook count, or MERGE approach above.
 
 ### 4. Gold/mart transform (replaces dbt Core + Snowflake)
+> ⚠️ **PROPOSED SUPERSESSION (2026-07-01):** the Owner ruled "Fabric-only" absolute, exercising
+> the "Option B" fallback below. This §4 decision (dbt retained) is superseded by
+> `docs/ADR/ADR-008-retire-dbt-warehouse-tsql.md` (**Accepted 2026-07-01**, Gate 0.5). Original text
+> left intact per ADR discipline.
+
 **Decision: dbt Core retained with `dbt-fabric` adapter (type: fabric) — NAMED EXCEPTION.**
 
 - dbt Core is NOT a Fabric-native service. It is third-party OSS. This is the one
@@ -103,7 +120,16 @@ that runs the Kaggle download script.**
   hard gate. It complements Layer 1 rather than replacing it.
 
 ### 6. Pipeline alerting (replaces Slack webhook / `SlackWebhookOperator`)
-**Decision: Data Activator + Teams — fully M365/Fabric native.**
+> **⚠️ SUPERSEDED for the pass/fail-alert channel by [ADR-013](ADR-013-slack-alerting-override.md)
+> (2026-07-06).** The Teams decision below could not be realised: Teams proved genuinely unusable
+> in the real MSA-rooted Fabric trial tenant (Power Platform BAP blocks first-party OAuth; a
+> working path also needs a paid M365 licence — `MIGRATION_JOURNEY.md` J-023). The Owner overrode
+> a @scope-guardian VETO (J-024) and re-admitted a **Slack Incoming Webhook** for pipeline-failure
+> alerting, lifting the FB4 Slack ban. The original Teams rationale is kept below for the migration
+> record, but the **current** alerting channel is Slack. The Data-Activator metric-threshold layer
+> is unaffected in principle (still Fabric-native) but is not yet built.
+
+**Decision (superseded — see banner): Data Activator + Teams — fully M365/Fabric native.**
 
 - **Pass/fail pipeline alerts:** Data Factory pipeline failure branch → Teams channel
   via a built-in Office 365 Outlook/Teams connector activity (native, no webhook token).
@@ -148,7 +174,7 @@ that runs the Kaggle download script.**
 | AWS Glue PySpark (5 jobs) | Fabric Spark Notebook (5 notebooks) | Yes |
 | Snowflake Gold / dbt-snowflake | Fabric Warehouse + dbt-fabric adapter | **Exception (dbt)** |
 | Great Expectations (GX) | Inline notebook assertions + Purview DQ | Yes |
-| Slack webhook | Data Activator + Teams connector | Yes |
+| Slack webhook | ~~Data Activator + Teams connector~~ → **Slack Incoming Webhook** (ADR-013 — Teams unusable in this tenant) + Data Activator | Yes |
 | Databricks Serverless SQL | SQL Analytics Endpoint (auto) | Yes |
 | Power BI (import mode) | Power BI Direct Lake | Yes |
 

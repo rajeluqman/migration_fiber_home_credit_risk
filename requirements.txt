@@ -10,9 +10,14 @@ kaggle==1.6.14
 azure-identity==1.15.0
 azure-storage-file-datalake==12.14.0
 
-# dbt (third-party OSS, named exception — ADR-006 §4)
-dbt-core==1.7.0
-dbt-fabric==1.7.0
+# dbt retired entirely (ADR-008, supersedes ADR-006 §4) — Gold is warehouse/ T-SQL stored
+# procedures, invoked by Data Factory. No dbt-core / dbt-fabric package here (FB5).
+
+# Local Silver dev/test (ADR-010 D1/D2, FB8) — Fabric Runtime 1.3 = Spark 3.5 vanilla,
+# so this is the same artifact/API, not a separate dialect. Requires a Java 11/17 JDK
+# (Spark 3.5 does not support Java 25+); tests/local/conftest.py pins JAVA_HOME.
+pyspark==3.5.1
+delta-spark==3.2.0
 
 # Testing
 pytest==7.4.0

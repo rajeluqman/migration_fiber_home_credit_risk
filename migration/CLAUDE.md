@@ -19,7 +19,10 @@
 ## Scope decided so far (2026-06-30 design session)
 - **Target = fully Fabric-native ecosystem.** Every layer maps to a Microsoft Fabric service —
   Data Factory pipelines, OneLake Lakehouse, Fabric Spark Notebook, Fabric Warehouse (T-SQL),
-  Purview DQ, Data Activator, Teams alerting, Power BI Direct Lake. See `ADR/ADR-006-*`.
+  Purview DQ, Data Activator, Power BI Direct Lake. See `ADR/ADR-006-*`. **Alerting exception:**
+  Teams was the original alerting channel but proved unusable in the real MSA-rooted Fabric trial
+  tenant; Owner re-admitted Slack (webhook) for pipeline-failure alerting only — `docs/ADR/ADR-013`,
+  overriding the FB4 Slack ban (J-024).
 - **One named exception, flagged not silenced:** dbt Core is third-party OSS, not a Fabric
   service. ADR-006 resolves this explicitly — read it before assuming dbt survives the migration.
 - **Tech-stack choice itself is locked, not re-litigated per document.** Per owner instruction

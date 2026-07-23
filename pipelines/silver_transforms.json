@@ -1,14 +1,173 @@
 {
-  "_stub": true,
-  "name": "silver_transforms",
-  "description": "Data Factory pipeline stub — 5 Fabric Spark Silver notebooks + inline assertion gate. Real pipeline JSON is exported from the Fabric UI once a workspace is provisioned. See docs/PIPELINE_SPEC.md section 5.2 for the notebook dependency chain.",
-  "chain_position": "2 of 3",
-  "activities": [
-    "notebook: nb_silver_application",
-    "notebook: nb_silver_bureau (depends on nb_silver_application)",
-    "notebook: nb_silver_previous_application (depends on nb_silver_application)",
-    "notebook: nb_silver_installments (depends on nb_silver_application)",
-    "notebook: nb_silver_balance_tables (depends on nb_silver_application)",
-    "gate: silver inline-assertion gate (fan-in) -> triggers gold_dbt"
-  ]
+  "properties": {
+    "activities": [
+      {
+        "name": "nb_silver_application",
+        "type": "TridentNotebook",
+        "dependsOn": [],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "2563f51b-d4af-4465-9d56-a6e361027a29",
+          "workspaceId": "a52bc51e-6afe-4675-9f63-3e45b36c07d6"
+        }
+      },
+      {
+        "name": "nb_silver_bureau",
+        "type": "TridentNotebook",
+        "dependsOn": [
+          {
+            "activity": "nb_silver_application",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "a8418cd7-7421-419d-8275-e08d57236408",
+          "workspaceId": "a52bc51e-6afe-4675-9f63-3e45b36c07d6"
+        }
+      },
+      {
+        "name": "nb_silver_previous_application",
+        "type": "TridentNotebook",
+        "dependsOn": [
+          {
+            "activity": "nb_silver_bureau",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "481cc101-b18b-456d-8ab4-ed3951d35833",
+          "workspaceId": "a52bc51e-6afe-4675-9f63-3e45b36c07d6"
+        }
+      },
+      {
+        "name": "nb_silver_installments",
+        "type": "TridentNotebook",
+        "dependsOn": [
+          {
+            "activity": "nb_silver_previous_application",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "df02420c-c0bd-4b50-8add-a2123aefc7a5",
+          "workspaceId": "a52bc51e-6afe-4675-9f63-3e45b36c07d6"
+        }
+      },
+      {
+        "name": "nb_silver_balance_tables",
+        "type": "TridentNotebook",
+        "dependsOn": [
+          {
+            "activity": "nb_silver_installments",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "notebookId": "e0ada4db-e262-437e-8b90-ecb1036eda3f",
+          "workspaceId": "a52bc51e-6afe-4675-9f63-3e45b36c07d6"
+        }
+      },
+      {
+        "name": "trigger_gold_warehouse",
+        "type": "InvokePipeline",
+        "dependsOn": [
+          {
+            "activity": "nb_silver_balance_tables",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "operationType": "InvokeFabricPipeline",
+          "pipelineId": "a3b9d0e3-3517-4d14-bee6-76f6ab17f045",
+          "workspaceId": "a52bc51e-6afe-4675-9f63-3e45b36c07d6",
+          "waitOnCompletion": true,
+          "parameters": {}
+        },
+        "externalReferences": {
+          "connection": "a5ab3da0-dcb7-4a80-9120-3e4705a81281"
+        }
+      },
+      {
+        "name": "notify_slack_gold_failure",
+        "type": "WebActivity",
+        "dependsOn": [
+          {
+            "activity": "trigger_gold_warehouse",
+            "dependencyConditions": [
+              "Failed"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.01:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureOutput": false,
+          "secureInput": false
+        },
+        "typeProperties": {
+          "method": "POST",
+          "relativeUrl": "",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": "{\"text\": \":rotating_light: *Home Credit \\u2014 Gold build FAILED* :rotating_light:\\nThe gold_warehouse pipeline (dim_applicant / fact_* T-SQL build) failed inside the nightly chain. Fired from the Data Factory failure branch on trigger_gold_warehouse (ADR-013, G9).\"}"
+        },
+        "externalReferences": {
+          "connection": "ccc07b99-ad98-48c7-8b2e-b75bc73e8152"
+        }
+      }
+    ]
+  }
 }

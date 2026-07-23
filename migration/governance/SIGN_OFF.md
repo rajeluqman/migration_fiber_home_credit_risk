@@ -21,6 +21,43 @@ code authorised to merge to main. Real Fabric provisioning still requires Gate 1
 
 ---
 
+## Gate 0.5 — Option B Design Amendment (ADR-008 + ADR-009)
+Post-Gate-0 amendment: the Owner ruled "Fabric-only" **absolute**, exercising ADR-006 §4's
+pre-authorised "Option B" (retire dbt → Fabric Warehouse T-SQL) and adding capacity-lifecycle
+automation. This materially amends the Gate-0 ADR-005/006 decisions, so it carries its own
+sign-off. ADR-008 + ADR-009 stay **Proposed** until all boxes below are checked. See
+`MIGRATION_JOURNEY.md` J-002…J-008 for the full trail.
+
+| Role | Sign-off required | Status | Date | Notes |
+|---|---|---|---|---|
+| @data-architect | ADR-008 preserves grain/SCD2/identity; C1–C8 present in drafted text | ☑ Signed | 2026-07-01 | APPROVE of drafted text; C1–C8 verified line-by-line. Signature contingent on the C3 NULL-safe + C4 invariant + C5 atomicity side-by-side dbt proof landing in the build PR. |
+| @scope-guardian | ADR-008 (dbt retire, FB5) + ADR-009 (FB7 carve-out) are scope-compliant | ☑ Signed | 2026-07-01 | APPROVE both. FB7 widened to "capacity-lifecycle control-plane actions only" re-confirmed; hard-cap 3 actions / 1 resource; no banned platform reintroduced. |
+| @finops-agent | ADR-009 satisfies the Gate-0 pause condition; cost acceptable | ☑ Signed | 2026-07-01 | APPROVE. Pause condition satisfied by automation. Billing-increment + early CU-logging carried forward as pre-build verification items. Economic case watchdog+kill-switch-dependent, accepted. |
+| Owner | Final go/no-go on the Option B pivot | ☑ Signed | 2026-07-01 | GO — Option B pivot authorised (retire dbt → Warehouse T-SQL; capacity lifecycle automation). |
+
+**Gate 0.5 outcome:** ☑ SIGNED 2026-07-01 — ADR-008/009 = Accepted. Build-phase execution
+(same-PR checklist in ADR-008) authorised. Real Fabric provisioning still requires Gate 1.
+
+---
+
+## Gate 1.5 — Local-First Dev Workflow + Trial-Capacity Sequencing (ADR-010)
+Governs *how* logic gets developed and *which* capacity is provisioned first, so the $200
+credit is spent on validation, not iteration. Adds boundary rule **FB8** (fenced local-dev
+PySpark under `tests/local/`, cite-ADR-010) and a local pre-parity Tier 0 to ADR-007.
+ADR-010 stays **Proposed** until all boxes below are checked.
+
+| Role | Sign-off required | Status | Date | Notes |
+|---|---|---|---|---|
+| @scope-guardian | FB8 carve-out scope-compliant (fenced to `tests/local/`, cite-ADR-010, FB1–FB4 still hold, dev-only never deployed to Fabric) | ☑ Signed | 2026-07-01 | APPROVE-CONDITIONAL; 3 fixes applied (pipeline-isolation now enforced, code/doc nesting agree, string-match limit disclosed). D3/D4 Fabric-native — no veto. |
+| @finops-agent | Trial-first sequencing (ADR-010 D4) protects the $200 credit; local-first dev keeps iteration CU at zero | ☑ Signed | 2026-07-01 | APPROVE-CONDITIONAL; economics of D1/D2/D4 signed. Trial-capacity operational conditions (day-60/61, ADR-009 coverage, CU-budget) carried forward as pre-Gate-1.5 hygiene. |
+| Owner | GO / no-go on local-first + trial-first workflow | ☑ Signed | 2026-07-01 | GO — local-first dev + trial-first sequencing authorised. |
+
+**Gate 1.5 outcome:** ☑ SIGNED 2026-07-01 — ADR-010 = Accepted. FB8 carve-out + local pre-parity
+Tier 0 authorised. Finops trial-capacity operational conditions carried forward as pre-Gate-2
+hygiene (not blockers).
+
+---
+
 ## Gate 1 — New Repo + Contract Setup (required before any Fabric code is written)
 After Gate 0 is signed:
 - New dedicated repo created (`home-credit-fabric` or equivalent).
@@ -29,14 +66,31 @@ After Gate 0 is signed:
 - All 4 parent repo contracts still passing in the parent repo (no side-effects from
   branch work on the parent).
 
+**Reinterpretation note (2026-07-01, per `PROJECT_STATUS.md` "Next action" entry):** this repo
+(`migration_fiber_home_credit_risk`) *is* the dedicated Fabric repo the design-phase
+`fabric-migration/` folder was meant to be lifted into — it already carries the full
+governance-framework port (CLAUDE.md, agents, contracts, docs, ADR-001..004) plus the
+design-phase record as `migration/` (ADR-005/006/007, benchmarks, parity plan, this file). No
+second repo is being created; "new repo initialised" and "`fabric-migration/` lifted in" are
+satisfied by this repo's existing state, not by a fresh `git init` elsewhere. The remaining,
+still-open work is the contract-wiring and parity conditions below.
+
 | Condition | Evidence | Status |
 |---|---|---|
-| New repo initialised, `fabric-migration/` contents committed | GitHub repo URL | ☐ Pending |
-| `boundary_contract_fabric.py` exits 0 in CI | CI run link | ☐ Pending |
-| Parent `tests/boundary_contract.py` still exits 0 | Parent CI run link | ☐ Pending |
-| ADR-005 status updated to **Accepted** in new repo | Commit hash | ☐ Pending |
+| Dedicated Fabric repo exists with `migration/` (design-phase record) inside it | this repo, `migration/` at repo root | ☑ Signed |
+| `migration/governance/boundary_contract_fabric.py` wired into `.claude/hooks/` | `.claude/hooks/governance_guard.py` `BOUNDARY_SCRIPTS` tuple runs it alongside `tests/boundary_contract.py` on every governed-path Edit/Write/MultiEdit (PostToolUse); confirmed via manual PostToolUse simulation, exit 0 | ☑ Signed |
+| `migration/governance/boundary_contract_fabric.py` wired into CI | `.github/workflows/ci.yml` — "Boundary contract — portable Gate 1 copy" step | ☑ Signed |
+| `boundary_contract_fabric.py` exits 0 | local run 2026-07-01: `✅ fabric boundary contract OK` | ☑ Signed |
+| Parent `tests/boundary_contract.py` still exits 0 (no side-effects from wiring) | local run 2026-07-01: `✅ fabric boundary contract OK` | ☑ Signed |
+| `tests/identity_contract.py` still exits 0 | local run 2026-07-01: `✅ identity contract OK (SK_ID_CURR / SCD2 grain)` | ☑ Signed |
+| `tests/doc_reference_contract.py` still exits 0 | local run 2026-07-01: `DOC-REFERENCE CONTRACT: OK — 22 doc(s)` | ☑ Signed |
+| ADR-005 status is **Accepted** | `docs/ADR/ADR-005-fabric-full-migration-decision.md:3` — "Status: Accepted — Gate 0 signed 2026-07-01" | ☑ Signed |
 
-**Gate 1 outcome:** ☐ OPEN
+**Gate 1 outcome:** ☑ SIGNED 2026-07-01 — repo/contract wiring complete, all 4 static gates
+green. No real Fabric resource provisioned (out of scope for this gate). Next: Gate 1.5
+sequencing (already signed, see above) governs *how* Gate 2 work proceeds — first real
+provisioning step is the Fabric Trial capacity (ADR-010 D4), which requires an explicit,
+separate Owner confirmation before being executed (see `PROJECT_STATUS.md` "Do NOT").
 
 ---
 
@@ -46,26 +100,40 @@ dbt-fabric mart model is run. PII mask check (Tier 4) must pass before any Gold 
 
 | Condition (ADR-007 reference) | Evidence | Owner | Status |
 |---|---|---|---|
-| G1: All 7 Silver tables row-count match baseline | `parity_check.py` output | @senior-data-engineer | ☐ Pending |
-| G2: PK uniqueness on all keyed Silver tables | `parity_check.py` output | @senior-data-engineer | ☐ Pending |
-| G3: Null-PK count = 0 on all keyed Silver tables | `parity_check.py` output | @senior-data-engineer | ☐ Pending |
-| G4: silver_application PII mask verified | Notebook assertion log | @data-quality-steward | ☐ Pending |
-| G5: Dedup counts match for bureau_balance + installments | `parity_check.py` output | @senior-data-engineer | ☐ Pending |
-| G8: Idempotency re-run test passes | `parity_check.py --idempotency` output | @senior-data-engineer | ☐ Pending |
+| G1: All 7 Silver tables row-count match baseline | Bronze row-count parity vs. source CSVs, `MIGRATION_JOURNEY.md` J-019 | @senior-data-engineer | ☑ Signed 2026-07-05 |
+| G2: PK uniqueness on all keyed Silver tables | Throwaway `nb_silver_verify_gate2` real output, `MIGRATION_JOURNEY.md` J-020 — 7/7 tables `row_count == distinct_key_count` | @senior-data-engineer | ☑ Signed 2026-07-05 |
+| G3: Null-PK count = 0 on all keyed Silver tables | Same J-020 verify run — `null_key_count: 0` on all 7 tables | @senior-data-engineer | ☑ Signed 2026-07-05 |
+| G4: silver_application PII mask verified | Same J-020 verify run — sentinel/XNA→NULL counts match bronze exactly, zero sentinel-hash leaks, 5/5 sha256 sample checks match | @data-quality-steward | ☑ Signed 2026-07-05 — Owner-direct approval (waives standalone @data-quality-steward persona review this gate, per the ADR-011/ADR-012 Owner-waiver precedent already used twice in this project) |
+| G5: Dedup counts match for bureau_balance + installments | Same J-020 verify run — bureau_balance 27,299,925=27,299,925 (no raw dupes), installments 13,605,401→12,861,994 (743,407 real dupes collapsed) | @senior-data-engineer | ☑ Signed 2026-07-05 |
+| G8: Idempotency re-run test passes | J-020 — `nb_silver_application` re-run against byte-identical Bronze, row/distinct-key count unchanged at 307,511, `no_dup_rows: true` | @senior-data-engineer | ☑ Signed 2026-07-05 |
+| Owner | Final go/no-go on Gate 2 evidence (G1-G5, G8) | Owner | ☑ Signed 2026-07-05 — GO ("ok approved") |
 
-**Gate 2 outcome:** ☐ OPEN
+**Gate 2 outcome:** ☑ CLOSED 2026-07-05 — G1 (J-019) + G2/G3/G4/G5/G8 (J-020) all PASSED against
+real Fabric compute, Owner GO recorded. Gold/mart work (ADR-010 D3) is now authorised to begin.
 
 ---
 
 ## Gate 3 — Fabric Gold/Mart Parity (required before any cutover planning)
-dbt-fabric run complete, mart tables + SCD2 snapshot verified against the Kimball design.
+Fabric Warehouse T-SQL Gold build run for real, mart tables + SCD2 mechanism verified against the
+Kimball design (dbt retired per ADR-008 — "dbt-fabric run" below reads as "Fabric Warehouse T-SQL
+build run").
 
 | Condition (ADR-007 reference) | Evidence | Owner | Status |
 |---|---|---|---|
-| G6: Gold mart tables in Fabric Warehouse, same grain as Snowflake equivalents | dbt run output + row counts | @data-architect | ☐ Pending |
-| G7: SCD2 snapshot — exactly 1 is_current=TRUE row per applicant | dbt test output (equivalent of `assert_scd2_one_current_per_applicant.sql`) | @data-architect | ☐ Pending |
+| G6: Gold mart tables in Fabric Warehouse, same grain as Snowflake equivalents | J-021/J-022 (`MIGRATION_JOURNEY.md`): `usp_build_fact_loan_application`/`fact_bureau_credit`/`fact_installment_payment` run against real Warehouse + full Silver data — 307,511/1,716,428/12,861,994 rows, each exactly matching its grain-key distinct-count and the Silver source row count | @data-architect | ☑ Signed 2026-07-06 |
+| G7: SCD2 snapshot — exactly 1 is_current=TRUE row per applicant | J-022: `usp_build_dim_applicant` run against real Warehouse + full Silver data — 307,511 rows = 307,511 distinct `applicant_id` = 307,511 `is_current=1`, 0 violations of the `usp_assert_dim_applicant_one_current` invariant; NULL-transition (real applicant 100002), C4 both-direction THROW, C8 fact-grain THROW, and C5 rollback-path (deliberate forced failure) all independently proven on real-data scratch copies | @data-architect | ☑ Signed 2026-07-06 |
 
-**Gate 3 outcome:** ☐ OPEN
+Both conditions were reached via an interim finding-and-fix cycle (J-021): the first real run
+against the Fabric Trial Warehouse surfaced 6 real Fabric Warehouse dialect/logic limitations
+(`BINARY(32)`/`NVARCHAR`/`DATETIME2(7)` unsupported, table variables unsupported, `OUTPUT`
+unsupported on any statement, and the ADR-008-documented C3 "compact form" being invalid T-SQL on
+any SQL Server-family engine — not merely a Fabric gap). @data-architect reviewed the fix
+(`migration/governance/GATE3_ARCHITECT_REVIEW_J021.md`) and returned **APPROVE-CONDITIONAL** — no
+veto (no re-grain, no identity change), 6 blocking conditions, all applied same session. See
+`MIGRATION_JOURNEY.md` J-021/J-022 for full detail.
+
+**Gate 3 outcome:** ☑ CLOSED 2026-07-06 — G6 and G7 both PASSED against real Fabric Warehouse
+compute.
 
 ---
 
@@ -74,12 +142,18 @@ Full pipeline run in Fabric, alerting live, BI confirmed.
 
 | Condition (ADR-007 reference) | Evidence | Owner | Status |
 |---|---|---|---|
-| G9: Data Activator + Teams alert fires on simulated failure | Screenshot/Teams message log | @data-platform-engineer | ☐ Pending |
-| G10: Power BI Direct Lake report loads without error | Report screenshot + semantic model log | Owner | ☐ Pending |
-| G11: Fabric CU cost post-first-run within estimate from Gate 0 | CU usage screenshot from Fabric admin | @finops-agent | ☐ Pending |
-| G12: `boundary_contract_fabric.py` exits 0 in new repo CI | CI run link | @scope-guardian | ☐ Pending |
+| G9: **Slack** alert fires on simulated failure (was Teams — ADR-013) | Slack message (Owner-confirmed) + Data Factory failure-branch run | @data-platform-engineer | ☑ **PASSED 2026-07-06** (Owner visually confirmed). Teams proven unusable in this MSA/personal-signup-rooted tenant (Power Platform BAP blocks first-party OAuth + needs paid M365 licence — 3 dead ends incl. Power Automate OAuth rejected `"Microsoft Accounts are not allowed by their BAP administrator"`). **Owner overrode @scope-guardian's VETO (J-024)**; Slack Incoming Webhook re-admitted for pipeline-failure alerting (ADR-013, FB4 lifted). **Real fire-test:** a `WebActivity` on a Script `THROW`'s `Failed` branch POSTed to Slack (Owner confirmed message in channel); the exact production path `InvokePipeline[Failed]→WebActivity→Slack` then independently verified via a throwaway parent invoking a failing child (Owner confirmed 3rd message). Wired into production `silver_transforms` as `notify_slack_gold_failure` on `trigger_gold_warehouse[Failed]` — any `gold_warehouse` failure fires it. Secret held in a Fabric `WebForPipeline` connection (GUID `ccc07b99…` in git, URL never committed). See `MIGRATION_JOURNEY.md` J-023/J-024/J-025. |
+| G10: Power BI Direct Lake report loads without error | Report screenshot + semantic model log | Owner | ☐ Pending — no Semantic Model item exists yet over `home_credit_warehouse`; needs Owner to open Power BI/Fabric in browser, create a Direct Lake report against the Gold tables, and capture the screenshot (this evidence type is explicitly Owner/browser-captured per this table, not API-automatable) |
+| G11: Fabric CU cost post-first-run within estimate from Gate 0 | CU usage screenshot from Fabric admin | @finops-agent | ☐ Pending — confirmed real limitation: `admin/capacities` API returns `403 InsufficientScopes` for the SP (a clearer diagnosis than J-016's earlier `404` — the endpoint exists but the SP's Entra app registration lacks the Fabric Admin API permission grant, a separate config step from the tenant settings fixed this session). Needs either that Entra API-permission grant, or Owner to check the "Microsoft Fabric Capacity Metrics" app in browser. |
+| G12: `boundary_contract_fabric.py` exits 0 in new repo CI | CI run link | @scope-guardian | ☑ **CLOSED** — [CI run 28768336125](https://github.com/rajeluqman/migration_fiber_home_credit_risk/actions/runs/28768336125) on PR #2, fully green (also fixed a stale `REPO_MAP.md` blocking full-green CI) |
 
-**Gate 4 outcome:** ☐ OPEN
+**Gate 4 outcome:** ☐ OPEN — **G9 + G12 PASSED**; real end-to-end pipeline chain (bronze_ingestion
+→ silver_transforms → gold_warehouse) built and run for real via Fabric Data Factory (J-023), Gold
+row counts verified matching the J-022 baseline exactly; Slack failure-alert wired + fire-tested
+(J-025). **G10 + G11 remain — both Owner-browser-action items** (G10: build a Power BI Direct Lake
+report over the Gold tables + screenshot; G11: CU cost via the Fabric Capacity Metrics app or an
+Entra Admin-API permission grant — `admin/capacities` gives `403 InsufficientScopes` for the SP).
+Once G10/G11 are captured, Gate 4 → CLOSED and Gate 5 (AWS/Snowflake teardown) can be considered.
 
 ---
 

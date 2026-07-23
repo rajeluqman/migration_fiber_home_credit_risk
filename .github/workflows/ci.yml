@@ -1,9 +1,10 @@
 name: CI
 
 # static-gates: $0, no cloud, no secrets, runs on every PR + push. Proves: scripts compile,
-# lint clean, unit tests pass, the 3 governance contracts hold, repo-map index is fresh.
-# Does NOT run a real Fabric Spark job or a real dbt-fabric build — those need Fabric credentials
-# not available in CI (no Fabric service principal OIDC wired here yet).
+# lint clean, unit tests pass, the governance contracts hold (identity, boundary x2 — parent +
+# Gate 1 portable copy —, doc-reference), repo-map index is fresh.
+# Does NOT run a real Fabric Spark job or a real warehouse/ T-SQL build (dbt retired, ADR-008) —
+# those need Fabric credentials not available in CI (no Fabric service principal OIDC wired here yet).
 on:
   pull_request:
     branches: [main]
@@ -41,8 +42,11 @@ jobs:
       - name: Identity contract (SK_ID_CURR + SCD2 — ADR-001)
         run: python tests/identity_contract.py
 
-      - name: Boundary contract (Fabric-only stack — FB1-FB6)
+      - name: Boundary contract (Fabric-only stack — FB1-FB7)
         run: python tests/boundary_contract.py
+
+      - name: Boundary contract — portable Gate 1 copy (migration/governance/boundary_contract_fabric.py)
+        run: python migration/governance/boundary_contract_fabric.py
 
       - name: Doc-reference contract (no model/path drift)
         run: python tests/doc_reference_contract.py

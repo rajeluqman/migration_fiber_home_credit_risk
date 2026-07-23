@@ -1,7 +1,9 @@
 # ADR-005: Full Migration to Microsoft Fabric Ecosystem
 
 **Status:** Accepted — Gate 0 signed 2026-07-01. Design-phase; real Fabric provisioning
-awaits Gate 1 (see `migration/governance/SIGN_OFF.md`).
+awaits Gate 1 (see `migration/governance/SIGN_OFF.md`). Provisioning sequencing (trial-capacity
+first, paid $200 credit reserved for scale validation) + local-first logic dev are governed by
+**ADR-010** (Proposed, Gate 1.5).
 **Date:** 2026-06-30
 **Owner:** Raja Ahmad Luqman (single-dev). Drafted in `fabric-migration/` per the
 2026-06-30 design session — built outside the live AWS/Snowflake governance globs so this
@@ -74,9 +76,12 @@ a presentation/positioning question, not an engineering one.
 - **Partial migration (Fabric for Gold only, keep AWS Glue for Silver):** rejected per owner
   instruction (2026-06-30) — "fully fabric ecosystem," not a hybrid. A hybrid would also
   reintroduce the cross-cloud egress problem this ADR exists to remove.
-- **Keep Slack for alerting, Fabric for everything else:** rejected for the same reason — Slack
+- **Keep Slack for alerting, Fabric for everything else:** rejected at migration time — Slack
   is a third-party service outside the Fabric/M365 ecosystem; Teams (native M365, same tenant as
-  Fabric) replaces it. See ADR-006.
+  Fabric) replaces it. See ADR-006. **⚠️ This specific rejection was later reversed by ADR-013
+  (2026-07-06):** Teams proved unusable in the real MSA-rooted Fabric trial tenant (BAP OAuth block
+  + paid-licence requirement), so the Owner re-admitted Slack for pipeline-failure alerting. The
+  rest of this ADR's "no hybrid" reasoning stands — only the alerting channel changed.
 
 ## Sign-off (REQUIRED before any real Fabric provisioning)
 Per parent `CLAUDE.md` governance: @data-architect holds veto on grain/model changes,

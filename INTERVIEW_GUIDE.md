@@ -13,7 +13,7 @@
 |-------|--------|----------|
 | "Re-platformed a 58M-row pipeline to Microsoft Fabric" | (unverified) | Governance framework exists (this repo); no Fabric workspace provisioned yet |
 | "OneLake Delta MERGE removes the Snowpipe idempotency workaround" | (unverified) | Design documented `docs/ADR/ADR-004-onelake-merge-idempotency.md`; not yet proven against a real Fabric Spark notebook run |
-| "dbt-fabric Gold models on Fabric Warehouse (T-SQL)" | (unverified) | `dbt_fabric/` stubs exist; no real `dbt run` against a Fabric Warehouse has executed |
+| "Fabric Warehouse T-SQL stored-proc Gold models, dbt retired" | (unverified) | `warehouse/` tree exists (ADR-008); no real proc run against a Fabric Warehouse has executed |
 | "Power BI Direct Lake dashboard" | (unverified) | Design only — `docs/ARCHITECTURE.md`; no Direct Lake semantic model built |
 | "Kimball star schema (3 facts + 3 dims), SCD2 on dim_applicant" | Carried forward from parent repo, unchanged (ADR-005 scope) | `docs/DATA_MODEL.md`, `docs/ADR/ADR-001-kimball-star-schema.md` — this claim is proven in the parent repo, not re-derived here |
 | "PII masking (SHA-256), sentinel-before-hash order" | Carried forward, unchanged | `docs/ADR/ADR-002-pii-mask-order.md` — logic ports verbatim to `notebooks/nb_silver_application.py` (not yet written) |
@@ -26,10 +26,11 @@
    Fabric is its native backend, so OneLake removes the S3→Snowflake→Databricks copy chain
    entirely. See `migration/ADR/ADR-005-fabric-full-migration-decision.md`.
 
-2. **"What's the one thing that ISN'T Fabric-native in this migration?"**
-   dbt Core — third-party OSS, explicitly flagged as a named exception, not silently kept.
-   `migration/ADR/ADR-006-fabric-native-service-mapping.md` §4 has the full reasoning and the
-   Option B fallback (stored-proc rebuild) if the owner wants literal zero-third-party.
+2. **"Was there ever anything that WASN'T Fabric-native in this migration?"**
+   Yes, briefly — dbt Core was kept as a named exception in `migration/ADR/ADR-006-*` §4. The
+   owner later ruled "Fabric-only" absolute, so `docs/ADR/ADR-008-retire-dbt-warehouse-tsql.md`
+   exercised ADR-006's own pre-authorised "Option B" fallback: dbt is retired, Gold is now
+   Fabric Warehouse T-SQL stored procedures under `warehouse/`, zero third-party tooling.
 
 3. **"How does idempotency actually improve under Fabric vs. the old Snowpipe design?"**
    Snowflake's `CREATE PIPE` body only accepts `COPY INTO`, not `MERGE` — that pushed the

@@ -22,12 +22,6 @@ __pycache__/
 .venv/
 venv/
 
-# dbt
-.dbt/
-dbt_packages/
-target/
-dbt_fabric/target/
-
 # Logs
 logs/
 *.log

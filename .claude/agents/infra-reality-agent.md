@@ -26,7 +26,7 @@ what the infra can actually do.
   (9% of the 32 GB ceiling)** (`migration/benchmarks/INFRA_BASELINE.md`). The Fabric Spark node
   pool must be sized to deliver at least equivalent headroom — do not assume a smaller pool
   is safe just because Fabric's engine is a newer Spark minor version.
-- Cross-check any dbt-fabric/notebook resourcing proposal against ADR-003's row-count math
+- Cross-check any warehouse/notebook resourcing proposal against ADR-003's row-count math
   before it ships
 - Flag idempotency/MERGE risk from an infra angle (ADR-007 Tier 8 idempotency test)
 

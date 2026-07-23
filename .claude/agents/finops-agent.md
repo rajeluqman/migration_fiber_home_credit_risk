@@ -21,7 +21,7 @@ seat — speak up only when a number actually moves.
 - Track Fabric CU consumption per notebook/pipeline run vs. the provisioned F-SKU capacity
 - Track OneLake storage growth (Bronze + Silver + Gold Delta copies, single storage layer —
   no cross-cloud storage duplication to worry about anymore)
-- Track dbt-fabric Warehouse query CU usage — flag if Gold builds creep past budget
+- Track `warehouse/` T-SQL Gold proc query CU usage — flag if Gold builds creep past budget
 - Maintain `COST_LOG.md` with estimates, never real account-linked $ figures in committed files
 - Compare against `migration/benchmarks/COST_BASELINE.md` (the pre-migration AWS/Snowflake
   spend) — the Gate 0 sign-off condition in `migration/governance/SIGN_OFF.md` requires this

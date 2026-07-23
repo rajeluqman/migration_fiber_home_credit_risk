@@ -1,20 +1,19 @@
 #!/usr/bin/env python3
 """Doc-reference contract — deterministic gate against documentation drift.
 
-Ported 1:1 from the parent repo's tests/doc_reference_contract.py, retargeted to this repo's
-dbt project root (`dbt_fabric/` not `dbt_home_credit/`) and Fabric-repo path roots (`notebooks/`,
-`pipelines/`, `migration/` instead of `glue/`, `airflow/`, `gx/`). Proves every model/path a
-Markdown doc references ACTUALLY EXISTS, so doc drift fails the build instead of misleading the
-next reader.
+Retargeted per ADR-008 (retire dbt, Gold = Fabric Warehouse T-SQL under `warehouse/`, not
+`dbt_fabric/`). Fabric-repo path roots: `notebooks/`, `pipelines/`, `migration/`, `warehouse/`.
+Proves every model/path a Markdown doc references ACTUALLY EXISTS, so doc drift fails the build
+instead of misleading the next reader.
 
 Stdlib only ($0, no deps). Exit 0 = every checked reference resolves. Exit 1 = drift.
 
 What it checks:
-  C1  MODEL refs — backtick-wrapped tokens shaped like a dbt object (prefix
-      fact_/fct_/dim_/stg_/int_/snap_/bridge_/mart_) must be a real model under
-      dbt_fabric/models/**/*.sql or a real snapshot under dbt_fabric/snapshots/*.sql.
+  C1  MODEL refs — backtick-wrapped tokens shaped like a warehouse object (prefix
+      fact_/fct_/dim_/stg_/int_/snap_/bridge_/mart_) must be a real file under
+      warehouse/**/*.sql.
   C2  PATH refs — backtick tokens and []() link targets that point at a repo path
-      (notebooks/ dbt_fabric/ docs/ tests/ pipelines/ .claude/ scripts/ migration/
+      (notebooks/ warehouse/ docs/ tests/ pipelines/ .claude/ scripts/ migration/
       architecture/ learning/) must exist on disk.
 
 Run:  python tests/doc_reference_contract.py
@@ -28,23 +27,23 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-DBT_ROOT = REPO / "dbt_fabric"
+WAREHOUSE_ROOT = REPO / "warehouse"
 
 MODEL_TOKEN = re.compile(r"^(?:fact|fct|dim|stg|int|snap|bridge|mart)_[a-z0-9_]+$")
-PATH_ROOTS = ("notebooks/", "dbt_fabric/", "docs/", "tests/", "pipelines/", ".claude/",
+PATH_ROOTS = ("notebooks/", "warehouse/", "docs/", "tests/", "pipelines/", ".claude/",
               "scripts/", "migration/", "architecture/", "learning/")
 
 # Intentionally-not-yet-existing names a doc may legitimately reference. Each entry MUST
 # carry a reason so the allowlist can't quietly rot into a dumping ground.
 ALLOW: dict[str, str] = {
     "docs/ADR/ADR-004-snowpipe-silver-gold-bridge.md": "cross-repo reference to parent repo's ADR, superseded by ADR-004-onelake-merge-idempotency.md in this repo",
+    "dim_loan_type": "Gate 0 tracked gap (docs/ADR/ADR-005:92, PROJECT_STATUS.md) — never built as a dbt or warehouse/ object, not a grain violation (J-001)",
+    "dim_credit_status": "Gate 0 tracked gap (docs/ADR/ADR-005:92, PROJECT_STATUS.md) — never built as a dbt or warehouse/ object, not a grain violation (J-001)",
 }
 
 
 def _known_objects() -> set[str]:
-    models = {p.stem for p in (DBT_ROOT / "models").rglob("*.sql")} if (DBT_ROOT / "models").exists() else set()
-    snapshots = {p.stem for p in (DBT_ROOT / "snapshots").glob("*.sql")} if (DBT_ROOT / "snapshots").exists() else set()
-    return models | snapshots
+    return {p.stem for p in WAREHOUSE_ROOT.rglob("*.sql")} if WAREHOUSE_ROOT.exists() else set()
 
 
 def _default_docs() -> list[Path]:
@@ -72,7 +71,7 @@ def check(docs: list[Path]) -> list[str]:
                 if MODEL_TOKEN.match(tok) and tok not in known and tok not in ALLOW:
                     errors.append(
                         f"{rel}:{lineno}  C1 model `{tok}` referenced but no "
-                        f"dbt_fabric/models|snapshots/**/{tok}.sql exists (drift)"
+                        f"warehouse/**/{tok}.sql exists (drift)"
                     )
 
             candidates = backtick.findall(line) + link.findall(line)
