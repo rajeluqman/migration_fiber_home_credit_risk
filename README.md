@@ -20,18 +20,31 @@ Same business problem as the parent repo; different compute surface. The Fabric 
 
 ## Status
 
-> ⚠️ **Governance-framework port only.** No Fabric workspace has been provisioned, no notebook
-> or pipeline has actually run against real data. `migration/governance/SIGN_OFF.md` Gate 0 is
-> unsigned. Every claim below is either "code/doc exists" or explicitly marked "(unverified)" —
-> see `INTERVIEW_GUIDE.md`.
+> ✅ **Provisioned and run end-to-end on real Fabric compute.** Gates 0 → 3 are signed and closed
+> (`migration/governance/SIGN_OFF.md`); Gate 4 is open with two Owner-browser items remaining.
 
-What **is** true today:
-- Full governance framework (this repo) is a 1:1 port of the parent repo `home-credit-pipeline`,
-  retargeted to Fabric per `migration/ADR/ADR-006-fabric-native-service-mapping.md`.
-- 3 static contracts pass: `tests/boundary_contract.py`, `tests/identity_contract.py`,
-  `tests/doc_reference_contract.py`.
-- Pre-migration benchmarks (`migration/benchmarks/`) are real numbers pulled from the parent
-  repo's proven AWS Glue runs — the bar Fabric output must clear (ADR-007).
+What **is** proven today (evidence in `MIGRATION_JOURNEY.md` J-021…J-025, `PROJECT_STATUS.md`):
+- **Full end-to-end run succeeded** (~37 min) across the 3 chained Data Factory pipelines —
+  `bronze_ingestion` → `silver_transforms` → `gold_warehouse` — against the real Fabric workspace.
+- **Idempotent rebuild, no row-count drift**: Gold row counts verified by live query and matching
+  the prior baseline exactly (307,511 dim / 307,511 / 1,716,428 / 12,861,994 fact rows).
+- **Gate 3 CLOSED against real Fabric Warehouse compute** — SCD Type 2 one-current-record-per-entity
+  invariant confirmed at full scale (307,511 rows, 0 violations), all fact grains matched to Silver
+  source counts. @data-architect review: `migration/governance/GATE3_ARCHITECT_REVIEW_J021.md`.
+- **Failure alerting fire-tested** (G9): a Data Factory `Failed` branch POSTs to Slack via a
+  `WebForPipeline` connection (webhook held in the connection store, never in git); wired into
+  production `silver_transforms`. ADR-013 records the Teams → Slack change and the reason.
+- **CI green** (G12) and 4 static contracts pass: `tests/boundary_contract.py`,
+  `tests/identity_contract.py`, `tests/doc_reference_contract.py`, `migration/governance/
+  boundary_contract_fabric.py`.
+- Pre-migration benchmarks (`migration/benchmarks/`) are real numbers from the parent repo's proven
+  AWS Glue runs — the bar Fabric output had to clear (ADR-007).
+
+Still open (honestly outstanding, Gate 4):
+- **G10** — Power BI Direct Lake report over the Gold tables not yet built. Direct Lake is the
+  designed serving mode and the SQL Analytics Endpoint is live, but no report/screenshot exists yet.
+- **G11** — CU cost capture blocked on a Fabric Admin API permission (`admin/capacities` returns
+  `403 InsufficientScopes`); pending the Capacity Metrics app instead.
 
 ---
 
