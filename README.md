@@ -20,18 +20,28 @@ Same business problem as the parent repo; different compute surface. The Fabric 
 
 ## Status
 
-> ⚠️ **Governance-framework port only.** No Fabric workspace has been provisioned, no notebook
-> or pipeline has actually run against real data. `migration/governance/SIGN_OFF.md` Gate 0 is
-> unsigned. Every claim below is either "code/doc exists" or explicitly marked "(unverified)" —
-> see `INTERVIEW_GUIDE.md`.
+> 📍 **`main` is the Gate-0 governance-framework port. The pipeline has since been provisioned and
+> run end-to-end on real Fabric compute — that work lives on branch
+> [`gate-0.5-option-b-adr-008-009`](../../tree/gate-0.5-option-b-adr-008-009) (PR #2, awaiting
+> merge). Read that branch, not this one, for current state.**
 
-What **is** true today:
-- Full governance framework (this repo) is a 1:1 port of the parent repo `home-credit-pipeline`,
-  retargeted to Fabric per `migration/ADR/ADR-006-fabric-native-service-mapping.md`.
+What is true on **`main`** (this branch):
+- Full governance framework is a 1:1 port of the parent repo `home-credit-pipeline`, retargeted to
+  Fabric per `migration/ADR/ADR-006-fabric-native-service-mapping.md`.
 - 3 static contracts pass: `tests/boundary_contract.py`, `tests/identity_contract.py`,
   `tests/doc_reference_contract.py`.
 - Pre-migration benchmarks (`migration/benchmarks/`) are real numbers pulled from the parent
   repo's proven AWS Glue runs — the bar Fabric output must clear (ADR-007).
+
+What is proven on **`gate-0.5-option-b-adr-008-009`** (see that branch's README for evidence):
+- Full end-to-end run succeeded (~37 min) across 3 chained Data Factory pipelines on the real
+  Fabric workspace; Gold row counts verified idempotent with no drift.
+- Gate 3 CLOSED against real Fabric Warehouse compute — SCD Type 2 one-current-record invariant
+  confirmed at full scale, 0 violations; fact grains matched to Silver source counts.
+- dbt retired in favour of Fabric Warehouse T-SQL stored procedures (ADR-008) — note the Stack
+  table below still reflects `main`'s pre-ADR-008 state.
+- Failure alerting fire-tested (Data Factory `Failed` branch → Slack, ADR-013); CI green.
+- Genuinely outstanding: G10 (Power BI Direct Lake report not yet built) and G11 (CU cost capture).
 
 ---
 
